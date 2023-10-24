@@ -1,0 +1,4 @@
+export const FBX_SKINNING_TYPE_RIGID = 0;
+export const FBX_SKINNING_TYPE_LINEAR = 1;
+export const FBX_SKINNING_TYPE_DUAL_QUATERNION = 2;
+export const FBX_SKINNING_TYPE_BLEND = 3;

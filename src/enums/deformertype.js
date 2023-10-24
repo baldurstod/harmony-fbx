@@ -1,0 +1,4 @@
+export const FBX_DEFORMER_TYPE_UNKNOWN = 0;
+export const FBX_DEFORMER_TYPE_SKIN = 1;
+export const FBX_DEFORMER_TYPE_BLEND_SHAPE = 2;
+export const FBX_DEFORMER_TYPE_VERTEX_CACHE = 3;
