@@ -1,0 +1,5 @@
+node_modules/
+test/fbx/
+test/*.fbx
+test/*.json
+test/*.txt

@@ -1,0 +1,11 @@
+{
+  "name": "harmony-fbx",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "gl-matrix": "^3.4.3",
+    "harmony-binary-reader": "github:baldurstod/harmony-binary-reader",
+    "pako": "^2.1.0"
+  }
+}
