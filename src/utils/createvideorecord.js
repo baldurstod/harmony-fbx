@@ -10,7 +10,7 @@ export function createVideoRecord(fbxVideo) {
 			createFBXRecordSingleBytes('Content', fbxVideo.content),
 			createFBXRecord('Properties70', {
 				childs: [
-					createFBXRecordMultipleStrings('P', ['Path', 'KString', 'XRefUrl', '', `C:\\Users\\Guillaume\\Desktop\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`]),
+					createFBXRecordMultipleStrings('P', ['Path', 'KString', 'XRefUrl', '', `C:\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`]),
 				],
 			}),
 		],
