@@ -13,9 +13,6 @@ const _FOOT_ID = new Uint8Array([0xfa, 0xbc, 0xab, 0x09, 0xd0, 0xc8, 0xd4, 0x66,
 const FBX_FOOTER2 = '\xf8\x5a\x8c\x6a\xde\xf5\xd9\x7e\xec\xe9\x0c\xe3\x75\x8f\x29\x0b';
 
 export class FBXExporter {
-	constructor() {
-	}
-
 	exportBinary(fbxFile) {
 		checkFile(fbxFile);
 		let version = fbxFile.version;
