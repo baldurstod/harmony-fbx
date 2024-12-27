@@ -1,32 +1,34 @@
-import { FBX_PROPERTY_TYPE_COMPOUND } from '../enums/propertytype.js';
+import { FbxPropertyType } from '../enums/propertytype';
+import { FBXObject } from './fbxobject';
 
 if (!BigInt.prototype.toJSON) {
-	BigInt.prototype.toJSON = function() { return this.toString() };
+	BigInt.prototype.toJSON = function () { return this.toString() };
 }
 
 export const FBX_PROPERTY_HIERARCHICAL_SEPARATOR = '|';
 
 export class FBXProperty {
-	#type;
-	#name;
-	#label;
-	#value;
+	#type: FbxPropertyType;
+	#name: string;
+	#value: any;
 	#srcObjects = new Set();
 	#flags = 0;
-	#parent;
-	constructor(parent, type = FBX_PROPERTY_TYPE_COMPOUND, name, value, flags = 0) {
-		if (type != FBX_PROPERTY_TYPE_COMPOUND && value === undefined) {
+	#parent: FBXObject | FBXProperty | null = null;
+	isFBXProperty = true;
+
+	constructor(parent: FBXObject | FBXProperty | null, type: FbxPropertyType = FbxPropertyType.Compound, name: string, value: any, flags: number = 0) {
+		if (type != FbxPropertyType.Compound && value === undefined) {
 			throw 'name is null';
 		}
 		if (parent) {
-			if (parent.isFBXProperty) {
-				if (parent.#type === FBX_PROPERTY_TYPE_COMPOUND) {
+			if ((parent as FBXProperty).isFBXProperty) {
+				if ((parent as FBXProperty).#type === FbxPropertyType.Compound) {
 					this.#parent = parent;
-					parent.#value.set(name, this);
+					(parent as FBXProperty).#value.set(name, this);
 				} else {
 					throw 'Parent must be of type compound';
 				}
-			} else if (parent.isFBXObject) {
+			} else if ((parent as FBXObject).isFBXObject) {
 				this.#parent = parent;
 			} else {
 				throw 'Parent must be FBXProperty or FBXObject';
@@ -34,7 +36,7 @@ export class FBXProperty {
 		}
 		this.#type = type;
 		this.#name = name;
-		if (type === FBX_PROPERTY_TYPE_COMPOUND) {
+		if (type === FbxPropertyType.Compound) {
 			this.#value = new Map();
 		} else {
 			this.#value = value;
@@ -55,7 +57,7 @@ export class FBXProperty {
 		return this.#value;
 	}
 
-	set(value) {
+	set(value: any) {
 		this.#value = value;
 	}
 
@@ -79,10 +81,10 @@ export class FBXProperty {
 		return this.#name;
 	}
 
-	get hierarchicalName() {
+	get hierarchicalName(): string {
 		//TODO: remove recursion
-		if (this.#parent?.isFBXProperty) {
-			const parentHierarchicalName = this.#parent.hierarchicalName;
+		if ((this.#parent as FBXProperty)?.isFBXProperty) {
+			const parentHierarchicalName = (this.#parent as FBXProperty).hierarchicalName;
 			if (parentHierarchicalName) {
 				return parentHierarchicalName + FBX_PROPERTY_HIERARCHICAL_SEPARATOR + this.#name;
 			} else {
@@ -93,40 +95,29 @@ export class FBXProperty {
 		}
 	}
 
-	set label(label) {
-		this.#label = label;
-	}
-
-	get label() {
-		return this.#label;
-	}
-
 	get parent() {
 		return this.#parent;
 	}
 
 	isCompound() {
-		return this.#type === FBX_PROPERTY_TYPE_COMPOUND;
+		return this.#type === FbxPropertyType.Compound;
 	}
 
 	isRootProperty() {
-		return this.#parent.isFBXObject;
+		return (this.#parent as FBXObject)?.isFBXObject;
 	}
 
-	connectSrcObject(fbxObject) {
+	connectSrcObject(object: FBXObject) {
 		//TODO: add connection type ?
-		if (!fbxObject.isFBXObject) {
-			throw 'connectSrcObject: fbxObject must be a FBXObject';
-		}
-		this.#srcObjects.add(fbxObject);
+		this.#srcObjects.add(object);
 	}
 
 	get srcObjects() {
 		return this.#srcObjects;
 	}
 
-	createProperty(type, name, value, flags) {
-		if (this.#type === FBX_PROPERTY_TYPE_COMPOUND) {
+	createProperty(type: FbxPropertyType, name: string, value: any, flags: number) {
+		if (this.#type === FbxPropertyType.Compound) {
 			if (this.#value.has(name)) {
 				return false;
 			}
@@ -146,7 +137,7 @@ export class FBXProperty {
 		if (includeSelf) {
 			childs.add(this);
 		}
-		if (this.#type === FBX_PROPERTY_TYPE_COMPOUND) {
+		if (this.#type === FbxPropertyType.Compound) {
 			for (let [childName, child] of this.#value) {
 				child.#getAllProperties(childs);
 			}
@@ -155,18 +146,19 @@ export class FBXProperty {
 		return childs;
 	}
 
-	getParentObject() {
+	getParentObject(): FBXObject | null {
 		const parent = this.#parent;
-		if (parent.isFBXObject) {
-			return parent;
+		if ((parent as FBXObject).isFBXObject) {
+			return (parent as FBXObject);
 		}
-		if (parent.isFBXProperty) {
+		if ((parent as FBXProperty).isFBXProperty) {
 			// TODO: remove recursion
-			return parent.getParentObject();
+			return (parent as FBXProperty).getParentObject();
 		}
+		return null;
 	}
 
-	findProperty(propertyName) {
+	findProperty(propertyName: string) {
 		if (this.#name === propertyName) {
 			return this;
 		}
@@ -188,4 +180,3 @@ export class FBXProperty {
 		}
 	}
 }
-FBXProperty.prototype.isFBXProperty = true;
