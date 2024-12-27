@@ -1,31 +1,46 @@
-import { exportFBXGlobalSettings } from './exportfbxglobalsettings.js';
-import { exportFBXScene } from './exportfbxscene.js';
-import { fbxAnimCurveNodeToRecord } from './fbxanimcurvenodetorecord.js';
-import { fbxAnimCurveToRecord } from './fbxanimcurvetorecord.js';
-import { fbxAnimLayerToRecord } from './fbxanimlayertorecord.js';
-import { fbxAnimStackToRecord } from './fbxanimstacktorecord.js';
-import { fbxCameraToRecord } from './fbxcameratorecord.js';
-import { fbxClusterToRecord } from './fbxclustertorecord.js';
-import { fbxMeshToRecord } from './fbxmeshtorecord.js';
-import { fbxNodeToRecord } from './fbxnodetorecord.js';
-import { fbxPoseToRecord } from './fbxposetorecord.js';
-import { fbxSkeletonToRecord } from './fbxskeletontorecord.js';
-import { fbxSkinToRecord } from './fbxskintorecord.js';
-import { fbxSurfaceMaterialToRecord } from './fbxsurfacematerialtorecord.js';
-import { fbxTextureToRecord } from './fbxtexturetorecord.js';
-import { FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES } from '../consts/recordsname.js';
-
-import { FBXFile } from '../model/fbxfile.js';
-import { createConnectionRecord } from '../utils/createconnectionrecord.js';
-import { createHeaderExtensionRecord, createDefinitionsRecord, createTakesRecord } from '../utils/createemptyfile.js';
-import { createFBXRecord, createFBXRecordSingleString } from '../utils/createfbxrecord.js';
-import { createVideoRecord } from '../utils/createvideorecord.js';
+import { exportFBXGlobalSettings } from './exportfbxglobalsettings';
+import { exportFBXScene } from './exportfbxscene';
+import { fbxAnimCurveNodeToRecord } from './fbxanimcurvenodetorecord';
+import { fbxAnimCurveToRecord } from './fbxanimcurvetorecord';
+import { fbxAnimLayerToRecord } from './fbxanimlayertorecord';
+import { fbxAnimStackToRecord } from './fbxanimstacktorecord';
+import { fbxCameraToRecord } from './fbxcameratorecord';
+import { fbxClusterToRecord } from './fbxclustertorecord';
+import { fbxMeshToRecord } from './fbxmeshtorecord';
+import { fbxNodeToRecord } from './fbxnodetorecord';
+import { fbxPoseToRecord } from './fbxposetorecord';
+import { fbxSkeletonToRecord } from './fbxskeletontorecord';
+import { fbxSkinToRecord } from './fbxskintorecord';
+import { fbxSurfaceMaterialToRecord } from './fbxsurfacematerialtorecord';
+import { fbxTextureToRecord } from './fbxtexturetorecord';
+import { FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES } from '../consts/recordsname';
+import { FBXFile } from '../model/fbxfile';
+import { createConnectionRecord } from '../utils/createconnectionrecord';
+import { createHeaderExtensionRecord, createDefinitionsRecord, createTakesRecord } from '../utils/createemptyfile';
+import { createFBXRecord, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createVideoRecord } from '../utils/createvideorecord';
+import { FBXScene } from '../model/fbxscene';
+import { FBXObject } from '../model/fbxobject';
+import { FBXNode } from '../model/fbxnode';
+import { FBXSurfacePhong } from '../model/fbxsurfacephong';
+import { FBXTexture } from '../model/fbxtexture';
+import { FBXRecord } from '../model/fbxrecord';
+import { FBXVideo } from '../model/fbxvideo';
+import { FBXSkin } from '../model/fbxskin';
+import { FBXCluster } from '../model/fbxcluster';
+import { FBXPose } from '../model/fbxpose';
+import { FBXAnimStack } from '../model/fbxanimstack';
+import { FBXAnimLayer } from '../model/fbxanimlayer';
+import { FBXAnimCurveNode } from '../model/fbxanimcurvenode';
+import { FBXAnimCurve } from '../model/fbxanimcurve';
+import { FBXProperty } from '../model/fbxproperty';
+import { FBXMesh } from '../model/fbxmesh';
 
 const FBX_RECORD_TYPE_MESH = 'Mesh';
 const FBX_RECORD_TYPE_LIMB_NODE = 'LimbNode';
 const FBX_RECORD_TYPE_CAMERA = 'Camera';
 
-export function fbxSceneToFBXFile(scene, creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
+export function fbxSceneToFBXFile(scene: FBXScene, creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
 	let fbxFile = new FBXFile();
 	fbxFile.version = 7400;
 
@@ -45,82 +60,101 @@ export function fbxSceneToFBXFile(scene, creator = 'harmony-fbx', appVendor = 'h
 	return fbxFile;
 }
 
-function exportObjects(fbxFile, scene) {
-	let nodesReferences = new Set();
-	let nodesConnections = new Set();
-	let alreadyExported = new Set();
-	for (let child of scene.rootNode.childs) {
-		exportObject(fbxFile, child, nodesReferences, nodesConnections, alreadyExported);
-	}
-	for (let object of scene.objects) {
-		exportObject(fbxFile, object, nodesReferences, nodesConnections, alreadyExported);
-	}
-	for (;;) {
-		let nodesReferences2 = new Set();
-		for (let child of nodesReferences) {
-			exportObject(fbxFile, child, nodesReferences2, nodesConnections, alreadyExported);
-		}
-		if (nodesReferences2.size == 0) {
-			break;
-		}
-		nodesReferences = nodesReferences2;
-	}
-
-	createConnections(fbxFile, nodesConnections);
+type ExportContext = {
+	nodesReferences: Set<any>,
+	nodesConnections: Set<any>,
+	alreadyExported: Set<FBXObject>,
 }
 
-function exportObject(fbxFile, object, nodesReferences, nodesConnections, alreadyExported) {
-	if (alreadyExported.has(object)) {
+function exportObjects(fbxFile: FBXFile, scene: FBXScene) {
+	/*
+	let nodesReferences = new Set();
+	let nodesConnections = new Set();
+	let alreadyExported = new Set<FBXObject>();
+	*/
+
+	const context: ExportContext = {
+		nodesReferences: new Set(),
+		nodesConnections: new Set<Connection>(),
+		alreadyExported: new Set<FBXObject>(),
+	}
+
+	for (let child of scene.rootNode.childs) {
+		exportObject(fbxFile, child, context/*nodesReferences, nodesConnections, alreadyExported*/);
+	}
+	for (let object of scene.objects) {
+		exportObject(fbxFile, object, context/*nodesReferences, nodesConnections, alreadyExported*/);
+	}
+	for (; ;) {
+		//let nodesReferences2 = new Set();
+		const context2: ExportContext = {
+			nodesReferences: new Set(),
+			nodesConnections: context.nodesConnections,
+			alreadyExported: context.alreadyExported,
+		}
+		for (let child of context.nodesReferences) {
+			exportObject(fbxFile, child, context2/*nodesReferences2, nodesConnections, alreadyExported*/);
+		}
+		if (context2.nodesReferences.size == 0) {
+			break;
+		}
+		context.nodesReferences = context2.nodesReferences;
+	}
+
+	createConnections(fbxFile, context.nodesConnections);
+}
+
+function exportObject(fbxFile: FBXFile, object: FBXObject, context: ExportContext/*nodesReferences, nodesConnections, alreadyExported*/) {
+	if (context.alreadyExported.has(object)) {
 		return;
 	}
 	switch (true) {
-		case object.isFBXNode:
-			exportNode(fbxFile, object, nodesReferences, nodesConnections, alreadyExported);
+		case (object as FBXNode).isFBXNode:
+			exportNode(fbxFile, (object as FBXNode), context/*nodesReferences, nodesConnections, alreadyExported*/);
 			break;
 		case object.isFBXObject:
-			exportObject2(fbxFile, object, nodesReferences, nodesConnections);
+			exportObject2(fbxFile, object, context/*nodesReferences, nodesConnections*/);
 			break;
 		default:
 			console.log(object);
 			throw 'Trying to export an unknown object';
 	}
-	alreadyExported.add(object)
+	context.alreadyExported.add(object)
 }
 
-function exportObject2(fbxFile, object, nodesReferences, nodesConnections) {
-	exportObjectPropertiesConnections(fbxFile, object, nodesReferences, nodesConnections);
-
+function exportObject2(fbxFile: FBXFile, object: FBXObject, context: ExportContext) {
+	exportObjectPropertiesConnections(fbxFile, object, context);
 
 	switch (true) {
-		case object.isFBXSurfacePhong:
-			exportSurfacePhongObject(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXSurfacePhong).isFBXSurfacePhong:
+			exportSurfacePhongObject(fbxFile, object as FBXSurfacePhong, context);
 			break;
-		case object.isFBXTexture:
-			exportFBXTexture(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXTexture).isFBXTexture:
+			exportFBXTexture(fbxFile, object as FBXTexture, context);
 			break;
-		case object.isFBXVideo:
-			exportFBXVideo(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXVideo).isFBXVideo:
+			exportFBXVideo(fbxFile, object as FBXVideo);
 			break;
-		case object.isFBXSkin:
-			exportFBXSkin(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXSkin).isFBXSkin:
+			exportFBXSkin(fbxFile, object as FBXSkin, context);
 			break;
-		case object.isFBXCluster:
-			exportFBXCluster(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXCluster).isFBXCluster:
+			exportFBXCluster(fbxFile, object as FBXCluster, context);
 			break;
-		case object.isFBXPose:
-			exportFBXPose(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXPose).isFBXPose:
+			exportFBXPose(fbxFile, object as FBXPose);
 			break;
-		case object.isFBXAnimStack:
-			exportFBXAnimStack(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXAnimStack).isFBXAnimStack:
+			exportFBXAnimStack(fbxFile, object as FBXAnimStack, context);
 			break;
-		case object.isFBXAnimLayer:
-			exportFBXAnimLayer(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXAnimLayer).isFBXAnimLayer:
+			exportFBXAnimLayer(fbxFile, object as FBXAnimLayer, context);
 			break;
-		case object.isFBXAnimCurveNode:
-			exportFBXAnimCurveNode(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXAnimCurveNode).isFBXAnimCurveNode:
+			exportFBXAnimCurveNode(fbxFile, object as FBXAnimCurveNode);
 			break;
-		case object.isFBXAnimCurve:
-			exportFBXAnimCurve(fbxFile, object, nodesReferences, nodesConnections);
+		case (object as FBXAnimCurve).isFBXAnimCurve:
+			exportFBXAnimCurve(fbxFile, object as FBXAnimCurve);
 			break;
 		default:
 			console.log(object);
@@ -128,17 +162,21 @@ function exportObject2(fbxFile, object, nodesReferences, nodesConnections) {
 	}
 }
 
-function exportObjectPropertiesConnections(fbxFile, fbxObject, nodesReferences, nodesConnections) {
-	exportPropertiesConnections(fbxFile, fbxObject.rootProperty, nodesReferences, nodesConnections)
+function exportObjectPropertiesConnections(fbxFile: FBXFile, fbxObject: FBXObject, context: ExportContext) {
+	exportPropertiesConnections(fbxFile, fbxObject.rootProperty, context)
 }
 
-function exportPropertiesConnections(fbxFile, fbxProperty, nodesReferences, nodesConnections) {
+function exportPropertiesConnections(fbxFile: FBXFile, fbxProperty: FBXProperty, context: ExportContext/*nodesReferences, nodesConnections*/) {
 	fbxProperty.srcObjects.forEach(object => {
 		const parentObject = fbxProperty.getParentObject();
+
+		if (!parentObject) {
+			return;
+		}
 		// Ensure the parent object is exported
-		nodesReferences.add(parentObject);
-		nodesReferences.add(object);
-		nodesConnections.add(createConnection(object, parentObject, fbxProperty.hierarchicalName));
+		context.nodesReferences.add(parentObject);
+		context.nodesReferences.add(object);
+		context.nodesConnections.add(createConnection(object, parentObject, fbxProperty.hierarchicalName));
 		console.log(fbxProperty);
 	});
 
@@ -146,22 +184,22 @@ function exportPropertiesConnections(fbxFile, fbxProperty, nodesReferences, node
 	if (fbxProperty.isCompound()) {
 		for (const [key, value] of fbxProperty.value) {
 			//console.log(key, value);
-			exportPropertiesConnections(fbxFile, value, nodesReferences, nodesConnections);
+			exportPropertiesConnections(fbxFile, value, context/*nodesReferences, nodesConnections*/);
 		}
 	}
 }
 
-function exportNode(fbxFile, node, nodesReferences, nodesConnections, alreadyExported) {
-	if (alreadyExported.has(node)) {
+function exportNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext /*nodesReferences, nodesConnections, alreadyExported*/) {
+	if (context.alreadyExported.has(node)) {
 		return;
 	}
 
-	exportObjectPropertiesConnections(fbxFile, node, nodesReferences, nodesConnections);
+	exportObjectPropertiesConnections(fbxFile, node, context/*nodesReferences, nodesConnections*/);
 
 	if (node.nodeAttribute) {
 		let nodeAttribute = node.nodeAttribute;
 		switch (true) {
-			case nodeAttribute.isFBXMesh:
+			case (nodeAttribute as FBXMesh).isFBXMesh:
 				exportMeshNode(fbxFile, node, nodesReferences, nodesConnections);
 				break;
 			case nodeAttribute.isFBXSkeleton:
@@ -179,7 +217,7 @@ function exportNode(fbxFile, node, nodesReferences, nodesConnections, alreadyExp
 	}
 
 	for (let child of node.childs) {
-		exportNode(fbxFile, child, nodesReferences, nodesConnections, alreadyExported);
+		exportNode(fbxFile, child, context/*nodesReferences, nodesConnections, alreadyExported*/);
 	}
 }
 
@@ -214,7 +252,7 @@ function exportSkeletonNode(fbxFile, node, nodesReferences, nodesConnections) {
 	nodesConnections.add(createConnection(node.nodeAttribute, node));
 }
 
-function exportCameraNode(fbxFile, node, nodesReferences, nodesConnections) {
+function exportCameraNode(fbxFile, node: FBXNode, nodesReferences, nodesConnections) {
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
 
 	objectsRecord.addChild(fbxNodeToRecord(node, FBX_RECORD_TYPE_CAMERA));
@@ -224,108 +262,115 @@ function exportCameraNode(fbxFile, node, nodesReferences, nodesConnections) {
 	nodesConnections.add(createConnection(node.nodeAttribute, node));
 }
 
-function createConnection(src, dst, target) {
-	return {s: src.id, d: dst.id, t: target};
+type Connection = {
+	source: bigint,
+	destination: bigint,
+	target?: string
+
 }
 
-function exportSurfacePhongObject(fbxFile, fbxSurfacePhong, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function createConnection(src: FBXObject, dst: FBXObject, target?: string): Connection {
+	return { source: src.id, destination: dst.id, target: target };
+}
+
+function exportSurfacePhongObject(fbxFile: FBXFile, fbxSurfacePhong: FBXSurfacePhong, context: ExportContext/*, nodesReferences, nodesConnections*/) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	let propertyNames = ['diffuse'];
 	for (let propertyName of propertyNames) {
 		let fbxProperty = fbxSurfacePhong[propertyName];
 		fbxProperty.srcObjects.forEach(object => {
-			nodesReferences.add(object);
-			nodesConnections.add(createConnection(object, fbxSurfacePhong, 'DiffuseColor'));
+			context.nodesReferences.add(object);
+			context.nodesConnections.add(createConnection(object, fbxSurfacePhong, 'DiffuseColor'));
 		});
 	}
 	objectsRecord.addChild(fbxSurfaceMaterialToRecord(fbxSurfacePhong));
 }
 
-function exportFBXTexture(fbxFile, fbxTexture, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXTexture(fbxFile: FBXFile, fbxTexture: FBXTexture, context: ExportContext/*, nodesReferences, nodesConnections*/) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	let textureMedia = fbxTexture.media;
 	if (textureMedia) {
-		nodesReferences.add(textureMedia);
-		nodesConnections.add(createConnection(textureMedia, fbxTexture));
+		context.nodesReferences.add(textureMedia);
+		context.nodesConnections.add(createConnection(textureMedia, fbxTexture));
 	}
 
 	objectsRecord.addChild(fbxTextureToRecord(fbxTexture));
 }
 
-function exportFBXVideo(fbxFile, fbxVideo, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXVideo(fbxFile: FBXFile, fbxVideo: FBXVideo) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 	objectsRecord.addChild(createVideoRecord(fbxVideo));
 }
 
-function exportFBXSkin(fbxFile, fbxSkin, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXSkin(fbxFile: FBXFile, fbxSkin: FBXSkin, context: ExportContext/*, nodesReferences, nodesConnections*/) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	fbxSkin.clusters.forEach(cluster => {
-		nodesReferences.add(cluster);
-		nodesConnections.add(createConnection(cluster, fbxSkin));
+		context.nodesReferences.add(cluster);
+		context.nodesConnections.add(createConnection(cluster, fbxSkin));
 	});
 
 	objectsRecord.addChild(fbxSkinToRecord(fbxSkin));
 }
 
-function exportFBXCluster(fbxFile, fbxCluster, nodesReferences, nodesConnections) {
+function exportFBXCluster(fbxFile, fbxCluster, context: ExportContext/*, nodesReferences, nodesConnections*/) {
 	if (fbxCluster.indexes.length == 0) {
 		return;
 	}
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
 	if (fbxCluster.link) {
-		nodesReferences.add(fbxCluster.link);
-		nodesConnections.add(createConnection(fbxCluster.link, fbxCluster));
+		context.nodesReferences.add(fbxCluster.link);
+		context.nodesConnections.add(createConnection(fbxCluster.link, fbxCluster));
 	}
 	objectsRecord.addChild(fbxClusterToRecord(fbxCluster));
 }
 
-function exportFBXAnimStack(fbxFile, fbxAnimStack, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXAnimStack(fbxFile: FBXFile, fbxAnimStack: FBXAnimStack, context: ExportContext) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 	/*if (fbxAnimStack.link) {
 		nodesReferences.add(fbxAnimStack.link);
 		nodesConnections.add(createConnection(fbxAnimStack.link, fbxAnimStack));
 	}*/
 
 	fbxAnimStack.members.forEach(member => {
-		nodesReferences.add(member);
-		nodesConnections.add(createConnection(member, fbxAnimStack));
+		context.nodesReferences.add(member);
+		context.nodesConnections.add(createConnection(member, fbxAnimStack));
 	});
 
 	objectsRecord.addChild(fbxAnimStackToRecord(fbxAnimStack));
 }
 
-function exportFBXAnimLayer(fbxFile, fbxAnimLayer, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXAnimLayer(fbxFile: FBXFile, fbxAnimLayer: FBXAnimLayer, context: ExportContext) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	fbxAnimLayer.members.forEach(member => {
-		nodesReferences.add(member);
-		nodesConnections.add(createConnection(member, fbxAnimLayer));
+		context.nodesReferences.add(member);
+		context.nodesConnections.add(createConnection(member, fbxAnimLayer));
 	});
 
 	objectsRecord.addChild(fbxAnimLayerToRecord(fbxAnimLayer));
 }
 
-function exportFBXAnimCurveNode(fbxFile, fbxAnimCurveNode, nodesReferences, nodesConnections) {
-	const objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXAnimCurveNode(fbxFile: FBXFile, fbxAnimCurveNode: FBXAnimCurveNode) {
+	const objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 	objectsRecord.addChild(fbxAnimCurveNodeToRecord(fbxAnimCurveNode));
 }
 
-function exportFBXAnimCurve(fbxFile, fbxAnimCurveNode, nodesReferences, nodesConnections) {
-	const objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
-	objectsRecord.addChild(fbxAnimCurveToRecord(fbxAnimCurveNode));
+function exportFBXAnimCurve(fbxFile: FBXFile, fbxAnimCurve: FBXAnimCurve) {
+	const objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
+	objectsRecord.addChild(fbxAnimCurveToRecord(fbxAnimCurve));
 }
 
-function createConnections(fbxFile, connections) {
-	let connectionsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_CONNECTIONS);
+function createConnections(fbxFile: FBXFile, connections: Set<Connection>) {
+	let connectionsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_CONNECTIONS) as FBXRecord;
 	for (let connection of connections) {
-		connectionsRecord.addChild(createConnectionRecord(connection.s, connection.d, connection.t));
+		connectionsRecord.addChild(createConnectionRecord(connection.source, connection.destination, connection.target));
 	}
 }
 
-function exportTakes(fbxFile, fbxScene) {
+function exportTakes(fbxFile: FBXFile, fbxScene: FBXScene) {
 	let takesRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_TAKES);
 	let srcObjects = fbxScene.srcObjects;
 	for (let srcObject of srcObjects) {
@@ -335,7 +380,7 @@ function exportTakes(fbxFile, fbxScene) {
 	}
 }
 
-function exportFBXPose(fbxFile, fbxPose, nodesReferences, nodesConnections) {
-	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS);
+function exportFBXPose(fbxFile: FBXFile, fbxPose: FBXPose) {
+	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 	objectsRecord.addChild(fbxPoseToRecord(fbxPose));
 }
