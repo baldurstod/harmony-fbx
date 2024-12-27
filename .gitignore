@@ -1,5 +1,8 @@
+dist/tsdoc-metadata.json
 node_modules/
+dist/dts/
 test/fbx/
 test/*.fbx
 test/*.json
 test/*.txt
+test/

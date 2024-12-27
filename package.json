@@ -2,10 +2,16 @@
   "name": "harmony-fbx",
   "version": "0.0.1",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "gl-matrix": "^3.4.3",
     "harmony-binary-reader": "github:baldurstod/harmony-binary-reader",
     "pako": "^2.1.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^12.1.2",
+    "rollup": "^4.29.1",
+    "tslib": "^2.8.1"
   }
 }
