@@ -1,4 +1,4 @@
-import { fbxPropertyToRecord } from './fbxPropertyToRecord.js';
+import { fbxPropertyToRecord } from './fbxpropertytorecord.js';
 import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
 import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
 import { FBX_GEOMETRY_VERSION } from '../constants.js';

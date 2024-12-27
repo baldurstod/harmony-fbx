@@ -1,4 +1,4 @@
-import {fbxPropertyToRecord} from './fbxPropertyToRecord.js';
+import {fbxPropertyToRecord} from './fbxpropertytorecord.js';
 import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleInt8, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
 import {createStringProperty, createInt64Property, createInt16Property} from '../utils/createfbxproperty.js';
 import {createPBool, createPEnum, createPVector3D, createPInteger, createPDouble} from '../utils/createprecord.js';
