@@ -16,7 +16,7 @@ export class FBXProperty {
 	#parent: FBXObject | FBXProperty | null = null;
 	isFBXProperty = true;
 
-	constructor(parent: FBXObject | FBXProperty | null, type: FbxPropertyType = FbxPropertyType.Compound, name: string, value: any, flags: number = 0) {
+	constructor(parent: FBXObject | FBXProperty | null, type: FbxPropertyType = FbxPropertyType.Compound, name: string = '', value: any = undefined, flags: number = 0) {
 		if (type != FbxPropertyType.Compound && value === undefined) {
 			throw 'name is null';
 		}
