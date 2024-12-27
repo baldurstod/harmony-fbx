@@ -1,16 +1,15 @@
-import { FBXDeformer } from './fbxdeformer.js';
-import { FBXManager } from './fbxmanager.js';
-import { FBX_DEFORMER_TYPE_SKIN } from '../enums/deformertype.js';
-import { FBX_SKINNING_TYPE_LINEAR } from '../enums/skinningtype.js';
+import { FBXDeformer } from './fbxdeformer';
+import { FBXManager } from './fbxmanager';
+import { FBX_DEFORMER_TYPE_SKIN } from '../enums/deformertype';
+import { FBX_SKINNING_TYPE_LINEAR } from '../enums/skinningtype';
+import { FBXGeometry } from './fbxgeometry';
+import { FBXCluster } from './fbxcluster';
 
 export class FBXSkin extends FBXDeformer {
-	#geometry;
+	#geometry?: FBXGeometry;
 	#skinningType = FBX_SKINNING_TYPE_LINEAR;
-	#clusters = new Set();
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXSkin = true;
-	}
+	#clusters = new Set<FBXCluster>();
+	isFBXSkin = true;
 
 	set geometry(geometry) {
 		if (geometry && !geometry.isFBXGeometry) {
@@ -37,11 +36,11 @@ export class FBXSkin extends FBXDeformer {
 		return this.#skinningType;
 	}
 
-	addCluster(fbxCluster) {
+	addCluster(fbxCluster: FBXCluster) {
 		this.#clusters.add(fbxCluster);
 	}
 
-	removeCluster(fbxCluster) {
+	removeCluster(fbxCluster: FBXCluster) {
 		this.#clusters.delete(fbxCluster);
 	}
 

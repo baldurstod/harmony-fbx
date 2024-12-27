@@ -11,7 +11,7 @@ export class FBXProperty {
 	#type: FbxPropertyType;
 	#name: string;
 	#value: any;
-	#srcObjects = new Set();
+	#srcObjects = new Set<FBXObject>();
 	#flags = 0;
 	#parent: FBXObject | FBXProperty | null = null;
 	isFBXProperty = true;

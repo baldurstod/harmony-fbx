@@ -1,27 +1,29 @@
-import { FBXDocument } from './fbxdocument.js';
-import { FBXManager } from './fbxmanager.js';
+import { FBXDocument } from './fbxdocument';
+import { FBXDocumentInfo } from './fbxdocumentinfo';
+import { FBXGlobalSettings } from './fbxglobalsettings';
+import { FBXManager } from './fbxmanager';
+import { FBXNode } from './fbxnode';
+import { FBXObject } from './fbxobject';
 
-class FBXScene extends FBXDocument {
-	#rootNode;
-	#globalSettings;
-	#sceneInfo;
-	#objects = new Set();
-	constructor(manager, name) {
+export class FBXScene extends FBXDocument {
+	#rootNode: FBXNode;
+	#globalSettings: FBXGlobalSettings;
+	#sceneInfo?: FBXDocumentInfo;
+	#objects = new Set<FBXObject>();
+	isFBXScene = true;
+
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXScene = true;
-		this.#rootNode = manager.createObject('FBXNode', 'Root node. This node is not saved');
-		this.#globalSettings = manager.createObject('FBXGlobalSettings', 'TODO: name me FBXScene / #globalSettings');
-		this.#rootNode.id = 0;
+		this.#rootNode = manager.createObject('FBXNode', 'Root node. This node is not saved') as FBXNode;
+		this.#globalSettings = manager.createObject('FBXGlobalSettings', 'TODO: name me FBXScene / #globalSettings') as FBXGlobalSettings;
+		this.#rootNode.id = 0n;
 	}
 
-	set sceneInfo(sceneInfo) {
-		if (!sceneInfo.isFBXDocumentInfo) {
-			throw 'sceneInfo must be of type FBXDocumentInfo';
-		}
+	set sceneInfo(sceneInfo: FBXDocumentInfo) {
 		this.#sceneInfo = sceneInfo;
 	}
 
-	get sceneInfo() {
+	get sceneInfo(): FBXDocumentInfo | undefined {
 		return this.#sceneInfo;
 	}
 
@@ -33,10 +35,7 @@ class FBXScene extends FBXDocument {
 		return this.#globalSettings;
 	}
 
-	addObject(object) {
-		if (!object.isFBXObject) {
-			throw 'object must be of type FBXObject';
-		}
+	addObject(object: FBXObject) {
 		this.#objects.add(object);
 	}
 

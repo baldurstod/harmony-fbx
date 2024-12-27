@@ -1,13 +1,10 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
 
 export class FBXVideo extends FBXObject {
-	#content;
+	#content?: Blob;
 	#type = 'Clip';
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXVideo = true;
-	}
+	isFBXVideo = true;
 
 	set content(content) {
 		this.#content = content;

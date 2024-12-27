@@ -1,7 +1,7 @@
-import { FBXCollection } from './fbxcollection.js';
-import { FBXManager } from './fbxmanager.js';
-import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags.js';
-import { FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME } from '../enums/propertytype.js';
+import { FBXCollection } from './fbxcollection';
+import { FBXManager } from './fbxmanager';
+import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
+import { FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME } from '../enums/propertytype';
 
 export class FBXAnimStack extends FBXCollection {
 	#description;
@@ -9,10 +9,10 @@ export class FBXAnimStack extends FBXCollection {
 	#localStop;
 	#referenceStart;
 	#referenceStop;
+	isFBXAnimStack = true;
 
-	constructor(manager, name) {
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXAnimStack = true;
 		this.#description = this.createProperty(FBX_PROPERTY_TYPE_STRING, 'Description', '', FBX_PROPERTY_FLAG_STATIC);
 		this.#localStart = this.createProperty(FBX_PROPERTY_TYPE_TIME, 'LocalStart', 0, FBX_PROPERTY_FLAG_STATIC);
 		this.#localStop = this.createProperty(FBX_PROPERTY_TYPE_TIME, 'LocalStop', 0, FBX_PROPERTY_FLAG_STATIC);

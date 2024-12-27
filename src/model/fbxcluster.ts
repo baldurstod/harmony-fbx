@@ -1,22 +1,19 @@
 import { mat4 } from 'gl-matrix';
-
-import {FBXManager} from './fbxmanager.js';
-import {FBXSubDeformer} from './fbxsubdeformer.js';
-import {FBX_LINK_MODE_NORMALIZE} from '../enums/linkmode.js';
-import {FBX_SUB_DEFORMER_TYPE_CLUSTER} from '../enums/subdeformertype.js';
+import { FBXManager } from './fbxmanager';
+import { FBXSubDeformer } from './fbxsubdeformer';
+import { FBX_LINK_MODE_NORMALIZE } from '../enums/linkmode';
+import { FBX_SUB_DEFORMER_TYPE_CLUSTER } from '../enums/subdeformertype';
+import { FBXNode } from './fbxnode';
 
 export class FBXCluster extends FBXSubDeformer {
 	#linkMode = FBX_LINK_MODE_NORMALIZE;
-	#link;
-	#indexes = [];
-	#weights = [];
+	#link?: FBXNode;
+	#indexes: Array<number> = [];
+	#weights: Array<number> = [];
 	#transformMatrix = mat4.create();
 	#transformLinkMatrix = mat4.create();
-	#transformParentMatrix;
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXCluster = true;
-	}
+	//#transformParentMatrix;
+	isFBXCluster = true;
 
 	set linkMode(linkMode) {
 		this.#linkMode = linkMode;
@@ -34,7 +31,7 @@ export class FBXCluster extends FBXSubDeformer {
 		return this.#link;
 	}
 
-	addVertexIndex(index, weight) {
+	addVertexIndex(index: number, weight: number) {
 		this.#indexes.push(index);
 		this.#weights.push(weight);
 	}
@@ -67,6 +64,7 @@ export class FBXCluster extends FBXSubDeformer {
 		return mat4.clone(this.#transformLinkMatrix);
 	}
 
+	/*
 	set transformParentMatrix(transformParentMatrix) {
 		this.#transformParentMatrix = transformParentMatrix;
 	}
@@ -74,5 +72,6 @@ export class FBXCluster extends FBXSubDeformer {
 	get transformParentMatrix() {
 		return this.#transformParentMatrix;
 	}
+	*/
 }
 FBXManager.registerClass('FBXCluster', FBXCluster);

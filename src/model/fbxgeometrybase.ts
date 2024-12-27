@@ -1,8 +1,5 @@
-import { FBXLayerContainer } from './fbxlayercontainer.js';
+import { FBXLayerContainer } from './fbxlayercontainer';
 
 export class FBXGeometryBase extends FBXLayerContainer {
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXGeometryBase = true;
-	}
+	isFBXGeometryBase = true;
 }

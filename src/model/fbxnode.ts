@@ -8,7 +8,7 @@ import { FBXSurfaceMaterial } from './fbxsurfacematerial';
 
 export class FBXNode extends FBXObject {
 	#parent: FBXNode | null = null;
-	#childs = new Set();
+	#childs = new Set<FBXNode>();
 	#materials: Array<FBXSurfaceMaterial> = [];
 	#nodeAttribute?: FBXNodeAttribute;
 	#inheritType = FBX_INHERIT_TYPE_PARENT_SCALING_FIRST;

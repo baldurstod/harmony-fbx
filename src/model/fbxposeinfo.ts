@@ -1,11 +1,15 @@
+import { mat4 } from 'gl-matrix';
+import { FBXNode } from './fbxnode';
+
 export class FBXPoseInfo {
-	#matrix;
+	#matrix= mat4.create();
 	#matrixIsLocal = false;
-	#node;
-	constructor(node, matrix, matrixIsLocal) {
-		this.node = node;
-		this.matrix = matrix;
-		this.matrixIsLocal = matrixIsLocal;
+	#node: FBXNode;
+
+	constructor(node: FBXNode, matrix: mat4, matrixIsLocal: boolean) {
+		this.#node = node;
+		mat4.copy(this.#matrix, matrix);
+		this.#matrixIsLocal = matrixIsLocal;
 	}
 
 	set matrix(matrix) {

@@ -1,8 +1,5 @@
-import { FBXNodeAttribute } from './fbxnodeattribute.js';
+import { FBXNodeAttribute } from './fbxnodeattribute';
 
 export class FBXLayerContainer extends FBXNodeAttribute {
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXLayerContainer = true;
-	}
+	isFBXLayerContainer = true;
 }

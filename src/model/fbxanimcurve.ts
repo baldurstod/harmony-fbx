@@ -1,14 +1,12 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
+import { FBXAnimCurveKey } from './fbxanimcurvekey';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
 
 export class FBXAnimCurve extends FBXObject {
 	#keys = new Map();
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXAnimCurve = true;
-	}
+	isFBXAnimCurve = true;
 
-	addKey(animCurveKey) {
+	addKey(animCurveKey: FBXAnimCurveKey) {
 		this.#keys.set(animCurveKey.time.time, animCurveKey);
 	}
 }

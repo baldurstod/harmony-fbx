@@ -1,14 +1,13 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
-import { FBXPoseInfo } from './fbxposeinfo.js';
+import { mat4 } from 'gl-matrix';
+import { FBXManager } from './fbxmanager';
+import { FBXNode } from './fbxnode';
+import { FBXObject } from './fbxobject';
+import { FBXPoseInfo } from './fbxposeinfo';
 
 export class FBXPose extends FBXObject {
 	#isBindPose = true;
-	#poseInfos = [];
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXPose = true;
-	}
+	#poseInfos: Array<FBXPoseInfo> = [];
+	isFBXPose = true;
 
 	set isBindPose(isBindPose) {
 		this.#isBindPose = isBindPose;
@@ -22,7 +21,7 @@ export class FBXPose extends FBXObject {
 		return !this.#isBindPose;
 	}
 
-	add(node, matrix, matrixIsLocal) {
+	add(node: FBXNode, matrix: mat4, matrixIsLocal: boolean) {
 		this.#poseInfos.push(new FBXPoseInfo(node, matrix, matrixIsLocal));
 	}
 

@@ -1,13 +1,11 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
+import { FBXVideo } from './fbxvideo';
 
 export class FBXTexture extends FBXObject {
-	#media;
+	#media?: FBXVideo;
 	#type = 'TextureVideoClip';
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXTexture = true;
-	}
+	isFBXTexture = true;
 
 	set type(type) {
 		throw 'We might want to check the exporter if we change the type';

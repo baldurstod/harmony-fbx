@@ -1,5 +1,5 @@
-import { FBXGeometry } from './fbxgeometry.js';
-import { FBXManager } from './fbxmanager.js';
+import { FBXGeometry } from './fbxgeometry';
+import { FBXManager } from './fbxmanager';
 
 export class FBXMesh extends FBXGeometry {
 	#vertices = [];
@@ -8,10 +8,7 @@ export class FBXMesh extends FBXGeometry {
 	#edges = [];
 	#uv = [];
 	#uvIndex = [];
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXMesh = true;
-	}
+	isFBXMesh = true;
 
 	set vertices(vertices) {
 		this.#vertices = vertices;

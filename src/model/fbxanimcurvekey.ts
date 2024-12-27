@@ -1,18 +1,19 @@
-import { FBXTime } from './fbxtime.js';
+import { FBXTime } from './fbxtime';
 
 export class FBXAnimCurveKey {
 	#time = new FBXTime();
 	#value = 0;
-	constructor(time, value) {
-		this.isFBXAnimCurveKey = true;
+	isFBXAnimCurveKey = true;
+
+	constructor(time: FBXTime, value: number) {
 		this.#set(time, value);
 	}
 
-	set(time, value) {
+	set(time: FBXTime, value: number) {
 		this.#set(time, value);
 	}
 
-	#set(time, value) {
+	#set(time: FBXTime, value: number) {
 		if (time) {
 			this.#time.copy(time);
 		}

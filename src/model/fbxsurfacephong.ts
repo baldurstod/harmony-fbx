@@ -1,10 +1,11 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXSurfaceLambert } from './fbxsurfacelambert.js';
+import { FBXManager } from './fbxmanager';
+import { FBXSurfaceLambert } from './fbxsurfacelambert';
 
 export class FBXSurfacePhong extends FBXSurfaceLambert {
-	constructor(manager, name) {
+	isFBXSurfacePhong = true;
+
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXSurfacePhong = true;
 		this.shadingModel = 'Phong';
 	}
 }

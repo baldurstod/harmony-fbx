@@ -1,25 +1,15 @@
-import { FBXGeometryBase } from './fbxgeometrybase.js';
+import { FBXDeformer } from './fbxdeformer';
+import { FBXGeometryBase } from './fbxgeometrybase';
 
 export class FBXGeometry extends FBXGeometryBase {
-	#deformers = new Set();
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXGeometry = true;
-	}
+	#deformers = new Set<FBXDeformer>();
+	isFBXGeometry = true;
 
-	addDeformer(deformer) {
-		if (!deformer.isFBXDeformer) {
-			throw 'deformer must be of type FBXDeformer';
-		}
-
+	addDeformer(deformer: FBXDeformer) {
 		this.#deformers.add(deformer);
 	}
 
-	removeDeformer(deformer) {
-		if (!deformer.isFBXDeformer) {
-			throw 'deformer must be of type FBXDeformer';
-		}
-
+	removeDeformer(deformer: FBXDeformer) {
 		this.#deformers.delete(deformer);
 	}
 
