@@ -1,14 +1,16 @@
-import {FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_STRING} from '../constants.js';
+import { FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_STRING, FbxType } from '../constants';
+import { FBXRecordProperty } from './fbxrecordproperty';
 
 export class FBXRecord {
 	#name = '';
-	#childs = new Set();
-	#properties = new Set();
-	constructor(name) {
+	#childs = new Set<FBXRecord>();
+	#properties = new Set<FBXRecordProperty>();
+	isFBXRecord = true;
+	constructor(name: string) {
 		this.name = name;
 	}
 
-	addChild(child) {
+	addChild(child: FBXRecord) {
 		if (!child.isFBXRecord) {
 			throw 'FBXFile: trying to insert a non FBXRecord child';
 		}
@@ -16,17 +18,17 @@ export class FBXRecord {
 		return child;
 	}
 
-	addChilds(childs) {
+	addChilds(childs: Array<FBXRecord>) {
 		for (let child of childs) {
 			this.addChild(child);
 		}
 	}
 
-	addProperty(property) {
+	addProperty(property: FBXRecordProperty) {
 		this.#properties.add(property);
 	}
 
-	addProperties(properties) {
+	addProperties(properties: Array<FBXRecordProperty>) {
 		for (let property of properties) {
 			this.addProperty(property);
 		}
@@ -51,7 +53,7 @@ export class FBXRecord {
 		return this.#properties;
 	}
 
-	getRecordsByName(recordName) {
+	getRecordsByName(recordName: string) {
 		let output = [];
 
 		for (let child of this.#childs) {
@@ -63,7 +65,7 @@ export class FBXRecord {
 		return output;
 	}
 
-	getRecordByName(recordName) {
+	getRecordByName(recordName: string) {
 		for (let child of this.#childs) {
 			if (child.name == recordName) {
 				return child;
@@ -71,7 +73,7 @@ export class FBXRecord {
 		}
 	}
 
-	getProperty(type) {
+	getProperty(type: FbxType) {
 		for (let property of this.#properties) {
 			if (property.type == type) {
 				return property.value;
@@ -95,4 +97,3 @@ export class FBXRecord {
 		}
 	}
 }
-FBXRecord.prototype.isFBXRecord = true;
