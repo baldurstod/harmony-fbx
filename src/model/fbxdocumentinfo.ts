@@ -1,8 +1,5 @@
-import { FBXObject } from './fbxobject.js';
+import { FBXObject } from './fbxobject';
 
 export class FBXDocumentInfo extends FBXObject {
-	constructor(name) {
-		super(name);
-	}
+	isFBXDocumentInfo = true;
 }
-FBXDocumentInfo.prototype.isFBXDocumentInfo = true;
