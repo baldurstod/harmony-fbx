@@ -1,21 +1,15 @@
-import { FBXColor } from './fbxcolor.js';
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
-import { FBXAxisSystem } from './fbxaxissystem.js';
+import { FBXColor } from './fbxcolor';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
+import { FBXAxisSystem } from './fbxaxissystem';
 
 export class FBXGlobalSettings extends FBXObject {
 	#ambientColor = new FBXColor();
 	#defaultCamera = '';
 	#axisSystem = new FBXAxisSystem(2, 1);
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXGlobalSettings = true;
-	}
+	isFBXGlobalSettings = true;
 
-	set ambientColor(ambientColor) {
-		if (!ambientColor.isFBXColor) {
-			throw 'ambientColor must be a FBXColor';
-		}
+	set ambientColor(ambientColor: FBXColor) {
 		this.#ambientColor = ambientColor;
 	}
 
