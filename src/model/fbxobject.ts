@@ -1,5 +1,7 @@
-import { getUniqueId } from './fbxids.js';
-import { FBXProperty } from './fbxproperty.js';
+import { FbxPropertyType } from '../enums/propertytype';
+import { getUniqueId } from './fbxids';
+import { FBXManager } from './fbxmanager';
+import { FBXProperty } from './fbxproperty';
 
 export class FBXObject {
 	#id = getUniqueId();
@@ -7,7 +9,9 @@ export class FBXObject {
 	#srcObjects = new Set();
 	#rootProperty;
 	#manager;
-	constructor(manager, name = '') {
+	isFBXObject = true;
+
+	constructor(manager: FBXManager, name = '', ...args: Array<any>) {
 		if (!manager.isFBXManager) {
 			console.trace('Missing manager in FBXObject');
 			throw 'Missing manager in FBXObject';
@@ -41,19 +45,16 @@ export class FBXObject {
 		return this.#manager;
 	}
 
-	connectSrcObject(fbxObject) {
+	connectSrcObject(object: FBXObject) {
 		//TODO: add connection type ?
-		if (!fbxObject.isFBXObject) {
-			throw 'connectSrcObject: fbxObject must be a FBXObject';
-		}
-		this.#srcObjects.add(fbxObject);
+		this.#srcObjects.add(object);
 	}
 
 	get srcObjects() {
 		return this.#srcObjects;
 	}
 
-	createProperty(type, name, value, flags) {
+	createProperty(type: FbxPropertyType, name: string, value: any, flags: number) {
 		return new FBXProperty(this.#rootProperty, type, name, value, flags);
 	}
 
@@ -61,8 +62,7 @@ export class FBXObject {
 		return this.#rootProperty.getAllProperties(false);
 	}
 
-	findProperty(propertyName) {
+	findProperty(propertyName: string) {
 		return this.#rootProperty.findProperty(propertyName);
 	}
 }
-FBXObject.prototype.isFBXObject = true;
