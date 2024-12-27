@@ -1,3 +1,15 @@
+export enum FbxPropertyType {
+	Double = 50,
+	Double3 = 100,
+	String = 200,
+	Time = 300,
+	Enum = 1000,
+	Compound = 2000,
+	Color3 = 3000,
+	Bool = 5000,
+}
+
+
 export const FBX_PROPERTY_TYPE_DOUBLE = 50;
 export const FBX_PROPERTY_TYPE_DOUBLE_3 = 100;
 export const FBX_PROPERTY_TYPE_STRING = 200;
