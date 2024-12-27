@@ -7,7 +7,7 @@ export function createInt16Property(value: number) {
 export function createInt32Property(value: number) {
 	return new FBXRecordProperty(null, FBX_DATA_TYPE_INT_32, value);
 }
-export function createInt64Property(value: BigInt) {
+export function createInt64Property(value: bigint) {
 	return new FBXRecordProperty(null, FBX_DATA_TYPE_INT_64, value);
 }
 export function createDoubleProperty(value: number) {

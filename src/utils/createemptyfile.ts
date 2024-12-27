@@ -1,13 +1,10 @@
-import { createStringProperty, createInt64Property } from './createfbxproperty.js';
-import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString, fbxNameClass, createFBXRecordMultipleStrings, createFBXRecordSingleInt64 } from './createfbxrecord.js';
-import { createPInteger, createPDouble, createPColorRGB, createPEnum, createPString, createPTime, createPObject } from './createprecord.js';
-import { FBX_HEADER_VERSION, FBX_SCENEINFO_VERSION, FBX_KTIME, FBX_TEMPLATES_VERSION } from '../constants.js';
-import { FBX_RECORD_NAME_TAKES } from '../consts/recordsname.js';
-import { FBXFile } from '../model/fbxfile.js';
+import { createStringProperty, createInt64Property } from './createfbxproperty';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString, fbxNameClass, createFBXRecordMultipleStrings, createFBXRecordSingleInt64 } from './createfbxrecord';
+import { createPInteger, createPDouble, createPColorRGB, createPEnum, createPString, createPTime, createPObject } from './createprecord';
+import { FBX_HEADER_VERSION, FBX_SCENEINFO_VERSION, FBX_KTIME, FBX_TEMPLATES_VERSION } from '../constants';
+import { FBX_RECORD_NAME_TAKES } from '../consts/recordsname';
+import { FBXFile } from '../model/fbxfile';
 
-function padNumber(number, targetLength) {
-	return number.toString().padStart(targetLength, 0);
-}
 
 export function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
 	let fbxFile = new FBXFile();
@@ -26,7 +23,7 @@ export function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fb
 	return fbxFile;
 }
 
-export function createHeaderExtensionRecord(fbxFile, creator, appVendor, appName, appVersion) {
+export function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string) {
 	let date = new Date();
 	let fbxHeaderExtension = createFBXRecord('FBXHeaderExtension', {
 		childs: [
@@ -141,7 +138,7 @@ function createDocumentsRecord() {
 					createFBXRecordSingleInt64('RootNode', 0n),
 				],
 				properties: [
-					createInt64Property(9876),//TODO: what is this ?
+					createInt64Property(9876n),//TODO: what is this ?
 					createStringProperty('Scene'),
 					createStringProperty('Scene'),
 				]

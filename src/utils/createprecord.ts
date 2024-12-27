@@ -1,13 +1,15 @@
-import { createFBXRecord, createFBXRecordMultipleStrings } from './createfbxrecord.js';
-import { createStringProperty, createInt32Property, createDoubleProperty, createInt64Property } from './createfbxproperty.js';
+import { createFBXRecord, createFBXRecordMultipleStrings } from './createfbxrecord';
+import { createStringProperty, createInt32Property, createDoubleProperty, createInt64Property } from './createfbxproperty';
 
-export function createPString(name, value) {
+export function createPString(name: string, value: string) {
 	return createFBXRecordMultipleStrings('P', [name, 'KString', '', '', value]);
 }
-export function createPStringUrl(name, value) {
+
+export function createPStringUrl(name: string, value: string) {
 	return createFBXRecordMultipleStrings('P', [name, 'KString', 'Url', '', value]);
 }
-export function createPInteger(name, value) {
+
+export function createPInteger(name: string, value: number) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -18,7 +20,8 @@ export function createPInteger(name, value) {
 		],
 	});
 }
-export function createPDouble(name, value) {
+
+export function createPDouble(name: string, value: number) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -29,7 +32,8 @@ export function createPDouble(name, value) {
 		],
 	});
 }
-export function createPColorRGB(name, value) {
+
+export function createPColorRGB(name: string, value: Array<number>) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -42,7 +46,8 @@ export function createPColorRGB(name, value) {
 		],
 	});
 }
-export function createPEnum(name, value) {
+
+export function createPEnum(name: string, value: number) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -53,7 +58,8 @@ export function createPEnum(name, value) {
 		],
 	});
 }
-export function createPTime(name, value) {
+
+export function createPTime(name: string, value: bigint) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -64,7 +70,8 @@ export function createPTime(name, value) {
 		],
 	});
 }
-export function createPObject(name) {
+
+export function createPObject(name: string) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
@@ -74,18 +81,20 @@ export function createPObject(name) {
 		],
 	});
 }
-export function createPBool(name, value) {
+
+export function createPBool(name: string, value: boolean) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),
 			createStringProperty('bool'),
 			createStringProperty(''),
 			createStringProperty(''),
-			createInt32Property(value),
+			createInt32Property(value ? 1 : 0),
 		],
 	});
 }
-export function createPVector3D(name, value) {
+
+export function createPVector3D(name: string, value: Array<number>) {
 	return createFBXRecord('P', {
 		properties: [
 			createStringProperty(name),

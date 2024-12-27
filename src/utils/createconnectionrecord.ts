@@ -1,7 +1,7 @@
-import {createStringProperty, createInt64Property} from './createfbxproperty.js';
-import {FBXRecord} from '../model/fbxrecord.js';
+import { createStringProperty, createInt64Property } from './createfbxproperty';
+import { FBXRecord } from '../model/fbxrecord';
 
-export function createConnectionRecord(id, parentId, target) {
+export function createConnectionRecord(id: bigint, parentId: bigint, target: string | undefined) {
 	let fbxRecord = new FBXRecord('C');
 	fbxRecord.addProperty(createStringProperty(target ? 'OP' : 'OO'));
 	fbxRecord.addProperty(createInt64Property(id));

@@ -1,6 +1,6 @@
-import {createFBXRecord, createFBXRecordSingleInt32} from './createfbxrecord.js';
-import {createInt64Property} from './createfbxproperty.js';
-import {FBX_DEFORMER_CLUSTER_VERSION} from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32 } from './createfbxrecord';
+import { createInt64Property } from './createfbxproperty';
+import { FBX_DEFORMER_CLUSTER_VERSION } from '../constants';
 
 export function createBoneRecord(fbxBone) {
 	return createFBXRecord('Deformer', {
