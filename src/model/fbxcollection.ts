@@ -1,20 +1,14 @@
-import { FBXObject } from './fbxobject.js';
+import { FBXObject } from './fbxobject';
 
 export class FBXCollection extends FBXObject {
-	#members = new Set();
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXCollection = true;
-	}
+	#members = new Set<FBXObject>();
+	isFBXCollection = true;
 
-	add(member) {
-		if (!member.isFBXObject) {
-			throw 'member must be an FBXObject';
-		}
+	add(member: FBXObject) {
 		this.#members.add(member);
 	}
 
-	remove(member) {
+	remove(member: FBXObject) {
 		this.#members.delete(member);
 	}
 
