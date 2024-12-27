@@ -1,8 +1,9 @@
-import {createInt64Property, createStringProperty} from '../utils/createfbxproperty.js';
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleInt64} from '../utils/createfbxrecord.js';
-import {createPString, createPObject} from '../utils/createprecord.js';
+import { FBXScene } from '../model/fbxscene';
+import { createInt64Property, createStringProperty } from '../utils/createfbxproperty';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleInt64 } from '../utils/createfbxrecord';
+import { createPString, createPObject } from '../utils/createprecord';
 
-export function exportFBXScene(fbxScene) {
+export function exportFBXScene(fbxScene: FBXScene) {
 	let documents = createFBXRecord('Documents', {
 		childs: [
 			createFBXRecordSingleInt32('Count', 1),

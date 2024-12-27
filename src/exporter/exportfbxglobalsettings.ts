@@ -1,8 +1,9 @@
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordMultipleStrings} from '../utils/createfbxrecord.js';
-import {createPInteger, createPDouble, createPColorRGB, createPEnum, createPString, createPTime} from '../utils/createprecord.js';
-import {FBX_KTIME} from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordMultipleStrings } from '../utils/createfbxrecord';
+import { createPInteger, createPDouble, createPColorRGB, createPEnum, createPString, createPTime } from '../utils/createprecord';
+import { FBX_KTIME } from '../constants';
+import { FBXGlobalSettings } from '../model/fbxglobalsettings';
 
-export function exportFBXGlobalSettings(fbxGlobalSettings) {
+export function exportFBXGlobalSettings(fbxGlobalSettings: FBXGlobalSettings) {
 	let globalSettings = createFBXRecord('GlobalSettings', {
 		childs: [
 			createFBXRecordSingleInt32('Version', 1000),

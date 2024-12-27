@@ -1,19 +1,32 @@
+import { FbxType } from '../constants';
+import { FBXObject } from './fbxobject';
+import { FBXProperty } from './fbxproperty';
+
+declare global {
+	interface BigInt {
+		toJSON(): string;
+	}
+}
+
+
 if (!BigInt.prototype.toJSON) {
-	BigInt.prototype.toJSON = function() { return this.toString() };
+	BigInt.prototype.toJSON = function () { return this.toString() };
 }
 
 export class FBXRecordProperty {
-	#type;
-	#value;
-	#srcObjects = new Set();
+	#type: FbxType;
+	#value: any;
+	#srcObjects = new Set<FBXObject>();
 	#flags = 0;
-	#parent;
-	constructor(parent, type, value) {
+	#parent: FBXRecordProperty | FBXObject | FBXProperty | null = null;
+	isFBXProperty = true;
+
+	constructor(parent: FBXRecordProperty | FBXObject | FBXProperty | null, type: FbxType, value: any) {
 		if (parent) {
-			if (parent.isFBXProperty) {
+			if ((parent as FBXProperty).isFBXProperty) {
 				this.#parent = parent;
-			} else if (parent.isFBXObject) {
-				this.#parent = parent.rootProperty;
+			} else if ((parent as FBXObject).isFBXObject) {
+				this.#parent = (parent as FBXObject).rootProperty;
 			} else {
 				throw 'Parent must be FBXRecordProperty or FBXObject';
 			}
@@ -35,7 +48,7 @@ export class FBXRecordProperty {
 		return this.#value;
 	}
 
-	set(value) {
+	set(value: any) {
 		this.#value = value;
 	}
 
@@ -55,11 +68,8 @@ export class FBXRecordProperty {
 		return this.#parent;
 	}
 
-	connectSrcObject(fbxObject) {
+	connectSrcObject(fbxObject: FBXObject) {
 		//TODO: add connection type ?
-		if (!fbxObject.isFBXObject) {
-			throw 'connectSrcObject: fbxObject must be a FBXObject';
-		}
 		this.#srcObjects.add(fbxObject);
 	}
 
@@ -67,7 +77,7 @@ export class FBXRecordProperty {
 		return this.#srcObjects;
 	}
 
-	createProperty(type, value) {
+	createProperty(type: FbxType, value: any) {
 		return new FBXRecordProperty(this, type, value);
 	}
 
@@ -78,4 +88,3 @@ export class FBXRecordProperty {
 		}
 	}
 }
-FBXRecordProperty.prototype.isFBXProperty = true;

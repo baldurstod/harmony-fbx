@@ -1,31 +1,32 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
-import { FBX_INHERIT_TYPE_PARENT_SCALING_FIRST } from '../enums/inherittype.js';
-import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags.js';
-import { FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_BOOL } from '../enums/propertytype.js';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
+import { FBX_INHERIT_TYPE_PARENT_SCALING_FIRST } from '../enums/inherittype';
+import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
+import { FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_BOOL } from '../enums/propertytype';
+import { FBXNodeAttribute } from './fbxnodeattribute';
+import { FBXSurfaceMaterial } from './fbxsurfacematerial';
 
 export class FBXNode extends FBXObject {
-	#parent;
+	#parent: FBXNode | null = null;
 	#childs = new Set();
-	#materials = [];
-	#nodeAttribute;
+	#materials: Array<FBXSurfaceMaterial> = [];
+	#nodeAttribute?: FBXNodeAttribute;
 	#inheritType = FBX_INHERIT_TYPE_PARENT_SCALING_FIRST;
-
 	#show;
 	#localTranslation;
 	#localRotation;
 	#localScaling;
+	isFBXNode = true;
 
-	constructor(manager, name) {
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXNode = true;
 		this.#show = this.createProperty(FBX_PROPERTY_TYPE_BOOL, 'Show', 1.0, FBX_PROPERTY_FLAG_STATIC);
 		this.#localTranslation = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Translation', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
 		this.#localRotation = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Rotation', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
 		this.#localScaling = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Scaling', [1, 1, 1], FBX_PROPERTY_FLAG_STATIC);
 	}
 
-	set parent(parent) {
+	set parent(parent: FBXNode | null) {
 		if (this.#checkParent(parent)) {
 			if (this.#parent) {
 				this.#parent.#childs.delete(this);
@@ -40,17 +41,11 @@ export class FBXNode extends FBXObject {
 		}
 	}
 
-	addChild(child) {
-		if (!child.isFBXNode) {
-			throw 'Child is not FBXNode';
-		}
+	addChild(child: FBXNode) {
 		child.parent = this;
 	}
 
-	removeChild(child) {
-		if (!child.isFBXNode) {
-			throw 'Child is not FBXNode';
-		}
+	removeChild(child: FBXNode) {
 		child.parent = null;
 	}
 
@@ -62,7 +57,7 @@ export class FBXNode extends FBXObject {
 		return this.#parent;
 	}
 
-	#checkParent(parent) {
+	#checkParent(parent: FBXNode | null) {
 		if (parent === null) {
 			return true;
 		}
@@ -71,8 +66,8 @@ export class FBXNode extends FBXObject {
 			return false;
 		}
 
-		let current = parent;
-		for (;;) {
+		let current: FBXNode | null = parent;
+		for (; ;) {
 			if (current == this) {
 				console.log('Parent hierarchy contains self');
 				return false;
@@ -84,14 +79,11 @@ export class FBXNode extends FBXObject {
 		return true;
 	}
 
-	set nodeAttribute(nodeAttribute) {
-		if (!nodeAttribute.isFBXNodeAttribute) {
-			throw 'nodeAttribute must be of type FBXNodeAttribute';
-		}
+	set nodeAttribute(nodeAttribute: FBXNodeAttribute) {
 		this.#nodeAttribute = nodeAttribute;
 	}
 
-	get nodeAttribute() {
+	get nodeAttribute(): FBXNodeAttribute | undefined {
 		return this.#nodeAttribute;
 	}
 
@@ -135,10 +127,7 @@ export class FBXNode extends FBXObject {
 		return this.#localScaling;
 	}
 
-	addMaterial(surfaceMaterial) {
-		if (!surfaceMaterial.isFBXSurfaceMaterial ) {
-			throw 'surfaceMaterial must be of type FBXSurfaceMaterial';
-		}
+	addMaterial(surfaceMaterial: FBXSurfaceMaterial) {
 		this.#materials.push(surfaceMaterial);
 	}
 

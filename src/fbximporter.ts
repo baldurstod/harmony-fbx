@@ -1,11 +1,9 @@
 import { inflate } from 'pako';
 import { BinaryReader } from 'harmony-binary-reader';
-
-import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_LEN, FBX_BINARY_MAGIC } from './constants.js';
-
-import { FBXFile } from './model/fbxfile.js';
-import { FBXProperty } from './model/fbxproperty.js';
-import { FBXRecord } from './model/fbxrecord.js';
+import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_LEN, FBX_BINARY_MAGIC, FbxTypes } from './constants.js';
+import { FBXFile } from './model/fbxfile';
+import { FBXProperty } from './model/fbxproperty';
+import { FBXRecord } from './model/fbxrecord';
 
 export class FBXImporter extends EventTarget {
 	//#reader;
@@ -18,7 +16,7 @@ export class FBXImporter extends EventTarget {
 		if (FBXImporter.#isBinary(reader)) {
 			return FBXImporter.#parseBinary(reader);
 		} else {
-			return  FBXImporter.#parseText(reader);
+			return FBXImporter.#parseText(reader);
 		}
 	}
 
@@ -35,7 +33,7 @@ export class FBXImporter extends EventTarget {
 		file.version = reader.getUint32(23);
 		reader.seek(27);
 
-		for (;;) {
+		for (; ;) {
 			let record = parseBinaryRecord(reader, file.version >= 7500, 0);
 			if (record) {
 				file.addChild(record);
@@ -156,7 +154,7 @@ function parseProperty(reader, tabLevel) {
 	return new FBXProperty(null, typeCode, property);
 }
 
-function parseArray(reader, arrayType) {
+function parseArray(reader, arrayType: FbxTypes) {
 	let arrayLen = reader.getUint32();
 	let encoding = reader.getUint32();
 	let compressedLength = reader.getUint32();
