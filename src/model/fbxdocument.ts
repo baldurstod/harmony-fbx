@@ -1,20 +1,20 @@
-import { FBXCollection } from './fbxcollection.js';
+import { FBXCollection } from './fbxcollection';
+import { FBXDocumentInfo } from './fbxdocumentinfo';
+import { FBXManager } from './fbxmanager';
 
 export class FBXDocument extends FBXCollection {
-	#documentInfo;
-	constructor(manager, name) {
+	#documentInfo?: FBXDocumentInfo;
+	isFBXDocument = true;
+
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXDocument = true;
 	}
 
-	set documentInfo(documentInfo) {
-		if (!documentInfo.isFBXDocumentInfo) {
-			throw 'documentInfo must be of type FBXDocumentInfo';
-		}
+	set documentInfo(documentInfo: FBXDocumentInfo) {
 		this.#documentInfo = documentInfo;
 	}
 
-	get documentInfo() {
+	get documentInfo(): FBXDocumentInfo | undefined {
 		return this.#documentInfo;
 	}
 }
