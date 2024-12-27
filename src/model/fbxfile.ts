@@ -1,9 +1,9 @@
+import { FBXRecord } from './fbxrecord';
+
 export class FBXFile {
 	#version = 7500;
-	#childs = new Set();
+	#childs = new Set<FBXRecord>();
 	#dateCreated = new Date();
-	constructor() {
-	}
 
 	set version(version) {
 		this.#version = version;
@@ -13,10 +13,7 @@ export class FBXFile {
 		return this.#version;
 	}
 
-	addChild(child) {
-		if (!child.isFBXRecord) {
-			throw 'FBXFile: trying to insert a non FBXRecord child';
-		}
+	addChild(child: FBXRecord) {
 		this.#childs.add(child);
 		return child;
 	}
@@ -25,7 +22,7 @@ export class FBXFile {
 		return this.#childs;
 	}
 
-	getRecordsByName(recordName) {
+	getRecordsByName(recordName: string) {
 		let output = [];
 
 		for (let child of this.#childs) {
@@ -37,7 +34,7 @@ export class FBXFile {
 		return output;
 	}
 
-	getRecordByName(recordName) {
+	getRecordByName(recordName: string) {
 		for (let child of this.#childs) {
 			if (child.name == recordName) {
 				return child;
