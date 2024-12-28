@@ -1,4 +1,4 @@
-export enum FbxType {
+export enum FbxType {//TODO: rename this
 	Int8 = 67,
 	Double = 68,
 	Float = 70,
