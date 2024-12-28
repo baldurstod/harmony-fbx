@@ -640,7 +640,7 @@ declare class FBXRecordProperty {
     };
 }
 
-declare class FBXScene extends FBXDocument {
+export declare class FBXScene extends FBXDocument {
     #private;
     isFBXScene: boolean;
     constructor(manager: FBXManager, name: string);

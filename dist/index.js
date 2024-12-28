@@ -1,6 +1,366 @@
 import { BinaryReader } from 'harmony-binary-reader';
 import { inflate } from 'pako';
 
+// I'm not sure there is reserved ids, let's start big
+let uniqueId = 1000000n;
+function getUniqueId() {
+    return ++uniqueId;
+}
+
+var FbxPropertyType;
+(function (FbxPropertyType) {
+    FbxPropertyType[FbxPropertyType["Double"] = 50] = "Double";
+    FbxPropertyType[FbxPropertyType["Double3"] = 100] = "Double3";
+    FbxPropertyType[FbxPropertyType["String"] = 200] = "String";
+    FbxPropertyType[FbxPropertyType["Time"] = 300] = "Time";
+    FbxPropertyType[FbxPropertyType["Enum"] = 1000] = "Enum";
+    FbxPropertyType[FbxPropertyType["Compound"] = 2000] = "Compound";
+    FbxPropertyType[FbxPropertyType["Color3"] = 3000] = "Color3";
+    FbxPropertyType[FbxPropertyType["Bool"] = 5000] = "Bool";
+})(FbxPropertyType || (FbxPropertyType = {}));
+const FBX_PROPERTY_TYPE_DOUBLE = 50;
+const FBX_PROPERTY_TYPE_DOUBLE_3 = 100;
+const FBX_PROPERTY_TYPE_STRING = 200;
+const FBX_PROPERTY_TYPE_TIME = 300;
+const FBX_PROPERTY_TYPE_ENUM = 1000;
+const FBX_PROPERTY_TYPE_COMPOUND = 2000;
+const FBX_PROPERTY_TYPE_COLOR_3 = 3000;
+const FBX_PROPERTY_TYPE_BOOL = 5000;
+const FBX_TYPE_UNDEFINED = 0;
+const FBX_TYPE_CHAR = 1;
+const FBX_TYPE_U_CHAR = 2;
+const FBX_TYPE_SHORT = 3;
+const FBX_TYPE_U_SHORT = 4;
+const FBX_TYPE_U_INT = 5;
+const FBX_TYPE_LONG_LONG = 6;
+const FBX_TYPE_U_LONG_LONG = 7;
+const FBX_TYPE_HALF_FLOAT = 8;
+const FBX_TYPE_BOOL = 9;
+const FBX_TYPE_INT = 10;
+const FBX_TYPE_FLOAT = 11;
+const FBX_TYPE_DOUBLE = 12;
+const FBX_TYPE_DOUBLE2 = 13;
+const FBX_TYPE_DOUBLE3 = 14;
+const FBX_TYPE_DOUBLE4 = 15;
+const FBX_TYPE_DOUBLE4x4 = 16;
+const FBX_TYPE_ENUM = 17;
+const FBX_TYPE_ENUM_M = -17;
+const FBX_TYPE_STRING = 18;
+const FBX_TYPE_TIME = 19;
+const FBX_TYPE_REFERENCE = 20;
+const FBX_TYPE_BLOB = 21;
+const FBX_TYPE_DISTANCE = 22;
+const FBX_TYPE_DATE_TIME = 23;
+const FBX_TYPE_COUNT = 24;
+
+if (!BigInt.prototype.toJSON) {
+    BigInt.prototype.toJSON = function () { return this.toString(); };
+}
+const FBX_PROPERTY_HIERARCHICAL_SEPARATOR = '|';
+class FBXProperty {
+    #type;
+    #name;
+    #value;
+    #srcObjects = new Set();
+    #flags = 0;
+    #parent = null;
+    isFBXProperty = true;
+    constructor(parent, type = FbxPropertyType.Compound, name = '', value = undefined, flags = 0) {
+        if (type != FbxPropertyType.Compound && value === undefined) {
+            throw 'name is null';
+        }
+        if (parent) {
+            if (parent.isFBXProperty) {
+                if (parent.#type === FbxPropertyType.Compound) {
+                    this.#parent = parent;
+                    parent.#value.set(name, this);
+                }
+                else {
+                    throw 'Parent must be of type compound';
+                }
+            }
+            else if (parent.isFBXObject) {
+                this.#parent = parent;
+            }
+            else {
+                throw 'Parent must be FBXProperty or FBXObject';
+            }
+        }
+        this.#type = type;
+        this.#name = name;
+        if (type === FbxPropertyType.Compound) {
+            this.#value = new Map();
+        }
+        else {
+            this.#value = value;
+        }
+        this.#flags = flags;
+        //TODO: check the value type
+    }
+    get type() {
+        return this.#type;
+    }
+    set value(value) {
+        this.#value = value;
+    }
+    get value() {
+        return this.#value;
+    }
+    set(value) {
+        this.#value = value;
+    }
+    get() {
+        return this.#value;
+    }
+    set flags(flags) {
+        this.#flags = flags;
+    }
+    get flags() {
+        return this.#flags;
+    }
+    set name(name) {
+        this.#name = name;
+    }
+    get name() {
+        return this.#name;
+    }
+    get hierarchicalName() {
+        //TODO: remove recursion
+        if (this.#parent?.isFBXProperty) {
+            const parentHierarchicalName = this.#parent.hierarchicalName;
+            if (parentHierarchicalName) {
+                return parentHierarchicalName + FBX_PROPERTY_HIERARCHICAL_SEPARATOR + this.#name;
+            }
+            else {
+                return this.#name;
+            }
+        }
+        else {
+            return this.#name;
+        }
+    }
+    get parent() {
+        return this.#parent;
+    }
+    isCompound() {
+        return this.#type === FbxPropertyType.Compound;
+    }
+    isRootProperty() {
+        return this.#parent?.isFBXObject;
+    }
+    connectSrcObject(object) {
+        //TODO: add connection type ?
+        this.#srcObjects.add(object);
+    }
+    get srcObjects() {
+        return this.#srcObjects;
+    }
+    createProperty(type, name, value, flags) {
+        if (this.#type === FbxPropertyType.Compound) {
+            if (this.#value.has(name)) {
+                return false;
+            }
+            const newProperty = new FBXProperty(this, type, name, value, flags);
+            this.#value.set(name, newProperty);
+            return newProperty;
+        }
+        else {
+            throw 'Trying to create a child property on a non coumpound property';
+        }
+    }
+    getAllProperties(includeSelf = true) {
+        return this.#getAllProperties(new Set(), includeSelf);
+    }
+    #getAllProperties(childs = new Set(), includeSelf = true) {
+        if (includeSelf) {
+            childs.add(this);
+        }
+        if (this.#type === FbxPropertyType.Compound) {
+            for (let [childName, child] of this.#value) {
+                child.#getAllProperties(childs);
+            }
+        }
+        return childs;
+    }
+    getParentObject() {
+        const parent = this.#parent;
+        if (parent.isFBXObject) {
+            return parent;
+        }
+        if (parent.isFBXProperty) {
+            // TODO: remove recursion
+            return parent.getParentObject();
+        }
+        return null;
+    }
+    findProperty(propertyName) {
+        if (this.#name === propertyName) {
+            return this;
+        }
+        if (this.isCompound()) {
+            for (const [key, subProperty] of this.#value) {
+                const found = subProperty.findProperty(propertyName);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+    toJSON() {
+        return {
+            type: this.#type,
+            value: this.#value,
+        };
+    }
+}
+
+class FBXObject {
+    #id = getUniqueId();
+    #name = '';
+    #srcObjects = new Set();
+    #rootProperty;
+    #manager;
+    isFBXObject = true;
+    constructor(manager, name = '', ...args) {
+        if (!manager.isFBXManager) {
+            console.trace('Missing manager in FBXObject');
+            throw 'Missing manager in FBXObject';
+        }
+        this.#manager = manager;
+        this.name = name;
+        this.#rootProperty = new FBXProperty(this);
+    }
+    set id(id) {
+        this.#id = id;
+    }
+    get id() {
+        return this.#id;
+    }
+    set name(name) {
+        this.#name = name;
+    }
+    get name() {
+        return this.#name;
+    }
+    get rootProperty() {
+        return this.#rootProperty;
+    }
+    get manager() {
+        return this.#manager;
+    }
+    connectSrcObject(object) {
+        //TODO: add connection type ?
+        this.#srcObjects.add(object);
+    }
+    get srcObjects() {
+        return this.#srcObjects;
+    }
+    createProperty(type, name, value, flags) {
+        return new FBXProperty(this.#rootProperty, type, name, value, flags);
+    }
+    getAllProperties() {
+        return this.#rootProperty.getAllProperties(false);
+    }
+    findProperty(propertyName) {
+        return this.#rootProperty.findProperty(propertyName);
+    }
+}
+
+class FBXCollection extends FBXObject {
+    #members = new Set();
+    isFBXCollection = true;
+    add(member) {
+        this.#members.add(member);
+    }
+    remove(member) {
+        this.#members.delete(member);
+    }
+    get count() {
+        return this.#members.size;
+    }
+    get members() {
+        return this.#members;
+    }
+}
+
+class FBXDocument extends FBXCollection {
+    #documentInfo;
+    isFBXDocument = true;
+    constructor(manager, name) {
+        super(manager, name);
+    }
+    set documentInfo(documentInfo) {
+        this.#documentInfo = documentInfo;
+    }
+    get documentInfo() {
+        return this.#documentInfo;
+    }
+}
+
+class FBXManager {
+    #objects = new Set();
+    #documents = new Set();
+    isFBXManager = true;
+    static #registry = new Map();
+    destroy() {
+        this.#objects.clear();
+        this.#documents.clear();
+    }
+    static registerClass(className, classConstructor) {
+        FBXManager.#registry.set(className, classConstructor);
+    }
+    createObject(className, objectName, ...args) {
+        const classConstructor = FBXManager.#registry.get(className);
+        if (!classConstructor) {
+            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
+        }
+        const createdObject = new classConstructor(this, objectName, args);
+        if (createdObject) {
+            if (createdObject.isFBXDocument) {
+                this.#documents.add(createdObject);
+            }
+            else {
+                this.#objects.add(createdObject);
+            }
+        }
+        return createdObject;
+    }
+}
+
+class FBXScene extends FBXDocument {
+    #rootNode;
+    #globalSettings;
+    #sceneInfo;
+    #objects = new Set();
+    isFBXScene = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.#rootNode = manager.createObject('FBXNode', 'Root node. This node is not saved');
+        this.#globalSettings = manager.createObject('FBXGlobalSettings', 'TODO: name me FBXScene / #globalSettings');
+        this.#rootNode.id = 0n;
+    }
+    set sceneInfo(sceneInfo) {
+        this.#sceneInfo = sceneInfo;
+    }
+    get sceneInfo() {
+        return this.#sceneInfo;
+    }
+    get rootNode() {
+        return this.#rootNode;
+    }
+    get globalSettings() {
+        return this.#globalSettings;
+    }
+    addObject(object) {
+        this.#objects.add(object);
+    }
+    get objects() {
+        return this.#objects;
+    }
+}
+FBXManager.registerClass('FBXScene', FBXScene);
+
 var FbxType;
 (function (FbxType) {
     FbxType[FbxType["Int8"] = 67] = "Int8";
@@ -963,52 +1323,6 @@ function exportFBXScene(fbxScene) {
     });
     return documents;
 }
-
-var FbxPropertyType;
-(function (FbxPropertyType) {
-    FbxPropertyType[FbxPropertyType["Double"] = 50] = "Double";
-    FbxPropertyType[FbxPropertyType["Double3"] = 100] = "Double3";
-    FbxPropertyType[FbxPropertyType["String"] = 200] = "String";
-    FbxPropertyType[FbxPropertyType["Time"] = 300] = "Time";
-    FbxPropertyType[FbxPropertyType["Enum"] = 1000] = "Enum";
-    FbxPropertyType[FbxPropertyType["Compound"] = 2000] = "Compound";
-    FbxPropertyType[FbxPropertyType["Color3"] = 3000] = "Color3";
-    FbxPropertyType[FbxPropertyType["Bool"] = 5000] = "Bool";
-})(FbxPropertyType || (FbxPropertyType = {}));
-const FBX_PROPERTY_TYPE_DOUBLE = 50;
-const FBX_PROPERTY_TYPE_DOUBLE_3 = 100;
-const FBX_PROPERTY_TYPE_STRING = 200;
-const FBX_PROPERTY_TYPE_TIME = 300;
-const FBX_PROPERTY_TYPE_ENUM = 1000;
-const FBX_PROPERTY_TYPE_COMPOUND = 2000;
-const FBX_PROPERTY_TYPE_COLOR_3 = 3000;
-const FBX_PROPERTY_TYPE_BOOL = 5000;
-const FBX_TYPE_UNDEFINED = 0;
-const FBX_TYPE_CHAR = 1;
-const FBX_TYPE_U_CHAR = 2;
-const FBX_TYPE_SHORT = 3;
-const FBX_TYPE_U_SHORT = 4;
-const FBX_TYPE_U_INT = 5;
-const FBX_TYPE_LONG_LONG = 6;
-const FBX_TYPE_U_LONG_LONG = 7;
-const FBX_TYPE_HALF_FLOAT = 8;
-const FBX_TYPE_BOOL = 9;
-const FBX_TYPE_INT = 10;
-const FBX_TYPE_FLOAT = 11;
-const FBX_TYPE_DOUBLE = 12;
-const FBX_TYPE_DOUBLE2 = 13;
-const FBX_TYPE_DOUBLE3 = 14;
-const FBX_TYPE_DOUBLE4 = 15;
-const FBX_TYPE_DOUBLE4x4 = 16;
-const FBX_TYPE_ENUM = 17;
-const FBX_TYPE_ENUM_M = -17;
-const FBX_TYPE_STRING = 18;
-const FBX_TYPE_TIME = 19;
-const FBX_TYPE_REFERENCE = 20;
-const FBX_TYPE_BLOB = 21;
-const FBX_TYPE_DISTANCE = 22;
-const FBX_TYPE_DATE_TIME = 23;
-const FBX_TYPE_COUNT = 24;
 
 function createPropertiesRecord(fbxObject) {
     const fbxRecord = new FBXRecord('Properties70');
@@ -2460,12 +2774,6 @@ class FBXAxisSystem {
     }
 }
 
-// I'm not sure there is reserved ids, let's start big
-let uniqueId = 1000000n;
-function getUniqueId() {
-    return ++uniqueId;
-}
-
 class FBXBone {
     #id = getUniqueId();
     #name;
@@ -2540,36 +2848,6 @@ class FBXLayerElementMaterial extends FBXLayerElementTemplate {
     isFBXLayerElementMaterial = true;
 }
 
-class FBXManager {
-    #objects = new Set();
-    #documents = new Set();
-    isFBXManager = true;
-    static #registry = new Map();
-    destroy() {
-        this.#objects.clear();
-        this.#documents.clear();
-    }
-    static registerClass(className, classConstructor) {
-        FBXManager.#registry.set(className, classConstructor);
-    }
-    createObject(className, objectName, ...args) {
-        const classConstructor = FBXManager.#registry.get(className);
-        if (!classConstructor) {
-            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
-        }
-        const createdObject = new classConstructor(this, objectName, args);
-        if (createdObject) {
-            if (createdObject.isFBXDocument) {
-                this.#documents.add(createdObject);
-            }
-            else {
-                this.#objects.add(createdObject);
-            }
-        }
-        return createdObject;
-    }
-}
-
 class FBXTimeSpan {
     #start = new FBXTime();
     #stop = new FBXTime();
@@ -2615,4 +2893,4 @@ class FBXTakeInfo {
     }
 }
 
-export { FBXAnimCurveKey, FBXAxisSystem, FBXBone, FBXExporter, FBXFile, FBXImporter, FBXLayer, FBXLayerElementMaterial, FBXManager, FBXTakeInfo, FBXTime, FBXTimeSpan, FBX_BINARY_MAGIC, FBX_DATA_LEN, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DEFORMER_CLUSTER_VERSION, FBX_DEFORMER_SKIN_VERSION, FBX_GEOMETRY_BINORMAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_NORMAL_VERSION, FBX_GEOMETRY_TANGENT_VERSION, FBX_GEOMETRY_UV_VERSION, FBX_GEOMETRY_VERSION, FBX_HEADER_VERSION, FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED, FBX_KTIME, FBX_MAPPING_MODE_ALL_SAME, FBX_MAPPING_MODE_CONTROL_POINT, FBX_MAPPING_MODE_EDGE, FBX_MAPPING_MODE_NONE, FBX_MAPPING_MODE_POLYGON, FBX_MAPPING_MODE_POLYGON_VERTEX, FBX_MATERIAL_VERSION, FBX_MODELS_VERSION, FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY, FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT, FBX_NODE_ATTRIBUTE_TYPE_CAMERA, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER, FBX_NODE_ATTRIBUTE_TYPE_LIGHT, FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP, FBX_NODE_ATTRIBUTE_TYPE_MARKER, FBX_NODE_ATTRIBUTE_TYPE_MESH, FBX_NODE_ATTRIBUTE_TYPE_NULL, FBX_NODE_ATTRIBUTE_TYPE_NURBS, FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE, FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE, FBX_NODE_ATTRIBUTE_TYPE_PATCH, FBX_NODE_ATTRIBUTE_TYPE_SHAPE, FBX_NODE_ATTRIBUTE_TYPE_SKELETON, FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV, FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN, FBX_POSE_BIND_VERSION, FBX_PROJECTION_TYPE_ORTHOGONAL, FBX_PROJECTION_TYPE_PERSPECTIVE, FBX_PROPERTY_FLAG_ANIMATABLE, FBX_PROPERTY_FLAG_ANIMATED, FBX_PROPERTY_FLAG_HIDDEN, FBX_PROPERTY_FLAG_IMPORTED, FBX_PROPERTY_FLAG_LOCKED_ALL, FBX_PROPERTY_FLAG_LOCKED_MEMBER_0, FBX_PROPERTY_FLAG_LOCKED_MEMBER_1, FBX_PROPERTY_FLAG_LOCKED_MEMBER_2, FBX_PROPERTY_FLAG_LOCKED_MEMBER_3, FBX_PROPERTY_FLAG_MUTED_ALL, FBX_PROPERTY_FLAG_MUTED_MEMBER_0, FBX_PROPERTY_FLAG_MUTED_MEMBER_1, FBX_PROPERTY_FLAG_MUTED_MEMBER_2, FBX_PROPERTY_FLAG_MUTED_MEMBER_3, FBX_PROPERTY_FLAG_NONE, FBX_PROPERTY_FLAG_NOT_SAVABLE, FBX_PROPERTY_FLAG_STATIC, FBX_PROPERTY_FLAG_USER_DEFINED, FBX_PROPERTY_TYPE_BOOL, FBX_PROPERTY_TYPE_COLOR_3, FBX_PROPERTY_TYPE_COMPOUND, FBX_PROPERTY_TYPE_DOUBLE, FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_ENUM, FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME, FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES, FBX_REFERENCE_MODE_DIRECT, FBX_REFERENCE_MODE_INDEX, FBX_REFERENCE_MODE_INDEX_TO_DIRECT, FBX_SCENEINFO_VERSION, FBX_SKELETON_TYPE_EFFECTOR, FBX_SKELETON_TYPE_LIMB, FBX_SKELETON_TYPE_LIMB_NODE, FBX_SKELETON_TYPE_ROOT, FBX_SKINNING_TYPE_BLEND, FBX_SKINNING_TYPE_DUAL_QUATERNION, FBX_SKINNING_TYPE_LINEAR, FBX_SKINNING_TYPE_RIGID, FBX_TC_DAY, FBX_TC_HOUR, FBX_TC_LEGACY_MILLISECOND, FBX_TC_LEGACY_SECOND, FBX_TC_MILLISECOND, FBX_TC_MINUTE, FBX_TC_SECOND, FBX_TEMPLATES_VERSION, FBX_TEXTURE_VERSION, FBX_TIME_MODE_CUSTOM, FBX_TIME_MODE_DEFAULT, FBX_TIME_MODE_FILM_FULL_FRAME, FBX_TIME_MODE_FRAMES, FBX_TIME_MODE_FRAMES_100, FBX_TIME_MODE_FRAMES_1000, FBX_TIME_MODE_FRAMES_119_88, FBX_TIME_MODE_FRAMES_120, FBX_TIME_MODE_FRAMES_24, FBX_TIME_MODE_FRAMES_30, FBX_TIME_MODE_FRAMES_30_DROP, FBX_TIME_MODE_FRAMES_48, FBX_TIME_MODE_FRAMES_50, FBX_TIME_MODE_FRAMES_59_94, FBX_TIME_MODE_FRAMES_60, FBX_TIME_MODE_FRAMES_72, FBX_TIME_MODE_FRAMES_96, FBX_TIME_MODE_NTSC_DROP_FRAME, FBX_TIME_MODE_NTSC_FULL_FRAME, FBX_TIME_MODE_PAL, FBX_TIME_PROTOCOL_DEFAULT, FBX_TIME_PROTOCOL_FRAME_COUNT, FBX_TIME_PROTOCOL_SMPTE, FBX_TYPE_BLOB, FBX_TYPE_BOOL, FBX_TYPE_CHAR, FBX_TYPE_COUNT, FBX_TYPE_DATE_TIME, FBX_TYPE_DISTANCE, FBX_TYPE_DOUBLE, FBX_TYPE_DOUBLE2, FBX_TYPE_DOUBLE3, FBX_TYPE_DOUBLE4, FBX_TYPE_DOUBLE4x4, FBX_TYPE_ENUM, FBX_TYPE_ENUM_M, FBX_TYPE_FLOAT, FBX_TYPE_HALF_FLOAT, FBX_TYPE_INT, FBX_TYPE_LONG_LONG, FBX_TYPE_REFERENCE, FBX_TYPE_SHORT, FBX_TYPE_STRING, FBX_TYPE_TIME, FBX_TYPE_UNDEFINED, FBX_TYPE_U_CHAR, FBX_TYPE_U_INT, FBX_TYPE_U_LONG_LONG, FBX_TYPE_U_SHORT, FbxPropertyType, FbxType, MappingMode, ReferenceMode, SkeletonType, TimeMode, TimeProtocol, createDefinitionsRecord, createEmptyFile, createFBXRecord, createFBXRecordDoubleArray, createFBXRecordFloatArray, createFBXRecordInt32Array, createFBXRecordInt64Array, createFBXRecordMultipleBytes, createFBXRecordMultipleDouble, createFBXRecordMultipleFloat, createFBXRecordMultipleInt64, createFBXRecordMultipleStrings, createFBXRecordSingle, createFBXRecordSingleBytes, createFBXRecordSingleDouble, createFBXRecordSingleFloat, createFBXRecordSingleInt32, createFBXRecordSingleInt64, createFBXRecordSingleInt8, createFBXRecordSingleString, createHeaderExtensionRecord, createTakesRecord, fbxNameClass, fbxSceneToFBXFile };
+export { FBXAnimCurveKey, FBXAxisSystem, FBXBone, FBXExporter, FBXFile, FBXImporter, FBXLayer, FBXLayerElementMaterial, FBXManager, FBXScene, FBXTakeInfo, FBXTime, FBXTimeSpan, FBX_BINARY_MAGIC, FBX_DATA_LEN, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DEFORMER_CLUSTER_VERSION, FBX_DEFORMER_SKIN_VERSION, FBX_GEOMETRY_BINORMAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_NORMAL_VERSION, FBX_GEOMETRY_TANGENT_VERSION, FBX_GEOMETRY_UV_VERSION, FBX_GEOMETRY_VERSION, FBX_HEADER_VERSION, FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED, FBX_KTIME, FBX_MAPPING_MODE_ALL_SAME, FBX_MAPPING_MODE_CONTROL_POINT, FBX_MAPPING_MODE_EDGE, FBX_MAPPING_MODE_NONE, FBX_MAPPING_MODE_POLYGON, FBX_MAPPING_MODE_POLYGON_VERTEX, FBX_MATERIAL_VERSION, FBX_MODELS_VERSION, FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY, FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT, FBX_NODE_ATTRIBUTE_TYPE_CAMERA, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER, FBX_NODE_ATTRIBUTE_TYPE_LIGHT, FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP, FBX_NODE_ATTRIBUTE_TYPE_MARKER, FBX_NODE_ATTRIBUTE_TYPE_MESH, FBX_NODE_ATTRIBUTE_TYPE_NULL, FBX_NODE_ATTRIBUTE_TYPE_NURBS, FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE, FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE, FBX_NODE_ATTRIBUTE_TYPE_PATCH, FBX_NODE_ATTRIBUTE_TYPE_SHAPE, FBX_NODE_ATTRIBUTE_TYPE_SKELETON, FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV, FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN, FBX_POSE_BIND_VERSION, FBX_PROJECTION_TYPE_ORTHOGONAL, FBX_PROJECTION_TYPE_PERSPECTIVE, FBX_PROPERTY_FLAG_ANIMATABLE, FBX_PROPERTY_FLAG_ANIMATED, FBX_PROPERTY_FLAG_HIDDEN, FBX_PROPERTY_FLAG_IMPORTED, FBX_PROPERTY_FLAG_LOCKED_ALL, FBX_PROPERTY_FLAG_LOCKED_MEMBER_0, FBX_PROPERTY_FLAG_LOCKED_MEMBER_1, FBX_PROPERTY_FLAG_LOCKED_MEMBER_2, FBX_PROPERTY_FLAG_LOCKED_MEMBER_3, FBX_PROPERTY_FLAG_MUTED_ALL, FBX_PROPERTY_FLAG_MUTED_MEMBER_0, FBX_PROPERTY_FLAG_MUTED_MEMBER_1, FBX_PROPERTY_FLAG_MUTED_MEMBER_2, FBX_PROPERTY_FLAG_MUTED_MEMBER_3, FBX_PROPERTY_FLAG_NONE, FBX_PROPERTY_FLAG_NOT_SAVABLE, FBX_PROPERTY_FLAG_STATIC, FBX_PROPERTY_FLAG_USER_DEFINED, FBX_PROPERTY_TYPE_BOOL, FBX_PROPERTY_TYPE_COLOR_3, FBX_PROPERTY_TYPE_COMPOUND, FBX_PROPERTY_TYPE_DOUBLE, FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_ENUM, FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME, FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES, FBX_REFERENCE_MODE_DIRECT, FBX_REFERENCE_MODE_INDEX, FBX_REFERENCE_MODE_INDEX_TO_DIRECT, FBX_SCENEINFO_VERSION, FBX_SKELETON_TYPE_EFFECTOR, FBX_SKELETON_TYPE_LIMB, FBX_SKELETON_TYPE_LIMB_NODE, FBX_SKELETON_TYPE_ROOT, FBX_SKINNING_TYPE_BLEND, FBX_SKINNING_TYPE_DUAL_QUATERNION, FBX_SKINNING_TYPE_LINEAR, FBX_SKINNING_TYPE_RIGID, FBX_TC_DAY, FBX_TC_HOUR, FBX_TC_LEGACY_MILLISECOND, FBX_TC_LEGACY_SECOND, FBX_TC_MILLISECOND, FBX_TC_MINUTE, FBX_TC_SECOND, FBX_TEMPLATES_VERSION, FBX_TEXTURE_VERSION, FBX_TIME_MODE_CUSTOM, FBX_TIME_MODE_DEFAULT, FBX_TIME_MODE_FILM_FULL_FRAME, FBX_TIME_MODE_FRAMES, FBX_TIME_MODE_FRAMES_100, FBX_TIME_MODE_FRAMES_1000, FBX_TIME_MODE_FRAMES_119_88, FBX_TIME_MODE_FRAMES_120, FBX_TIME_MODE_FRAMES_24, FBX_TIME_MODE_FRAMES_30, FBX_TIME_MODE_FRAMES_30_DROP, FBX_TIME_MODE_FRAMES_48, FBX_TIME_MODE_FRAMES_50, FBX_TIME_MODE_FRAMES_59_94, FBX_TIME_MODE_FRAMES_60, FBX_TIME_MODE_FRAMES_72, FBX_TIME_MODE_FRAMES_96, FBX_TIME_MODE_NTSC_DROP_FRAME, FBX_TIME_MODE_NTSC_FULL_FRAME, FBX_TIME_MODE_PAL, FBX_TIME_PROTOCOL_DEFAULT, FBX_TIME_PROTOCOL_FRAME_COUNT, FBX_TIME_PROTOCOL_SMPTE, FBX_TYPE_BLOB, FBX_TYPE_BOOL, FBX_TYPE_CHAR, FBX_TYPE_COUNT, FBX_TYPE_DATE_TIME, FBX_TYPE_DISTANCE, FBX_TYPE_DOUBLE, FBX_TYPE_DOUBLE2, FBX_TYPE_DOUBLE3, FBX_TYPE_DOUBLE4, FBX_TYPE_DOUBLE4x4, FBX_TYPE_ENUM, FBX_TYPE_ENUM_M, FBX_TYPE_FLOAT, FBX_TYPE_HALF_FLOAT, FBX_TYPE_INT, FBX_TYPE_LONG_LONG, FBX_TYPE_REFERENCE, FBX_TYPE_SHORT, FBX_TYPE_STRING, FBX_TYPE_TIME, FBX_TYPE_UNDEFINED, FBX_TYPE_U_CHAR, FBX_TYPE_U_INT, FBX_TYPE_U_LONG_LONG, FBX_TYPE_U_SHORT, FbxPropertyType, FbxType, MappingMode, ReferenceMode, SkeletonType, TimeMode, TimeProtocol, createDefinitionsRecord, createEmptyFile, createFBXRecord, createFBXRecordDoubleArray, createFBXRecordFloatArray, createFBXRecordInt32Array, createFBXRecordInt64Array, createFBXRecordMultipleBytes, createFBXRecordMultipleDouble, createFBXRecordMultipleFloat, createFBXRecordMultipleInt64, createFBXRecordMultipleStrings, createFBXRecordSingle, createFBXRecordSingleBytes, createFBXRecordSingleDouble, createFBXRecordSingleFloat, createFBXRecordSingleInt32, createFBXRecordSingleInt64, createFBXRecordSingleInt8, createFBXRecordSingleString, createHeaderExtensionRecord, createTakesRecord, fbxNameClass, fbxSceneToFBXFile };

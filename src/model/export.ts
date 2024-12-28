@@ -1,1 +1,1 @@
-import {} from './fbxscene';
+export * from './fbxscene';

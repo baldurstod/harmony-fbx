@@ -37,7 +37,6 @@ export * from './model/fbxmanager';
 import {} from './model/fbxmesh';
 import {} from './model/fbxnode';
 import {} from './model/fbxpose';
-import {} from './model/fbxscene';
 import {} from './model/fbxskeleton';
 import {} from './model/fbxskin';
 import {} from './model/fbxsurfacephong';
