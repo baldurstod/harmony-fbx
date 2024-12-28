@@ -237,7 +237,7 @@ function exportMeshNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext)
 	});
 
 	objectsRecord.addChild(fbxNodeToRecord(node, FBX_RECORD_TYPE_MESH));
-	objectsRecord.addChild(fbxMeshToRecord(node.nodeAttribute));
+	objectsRecord.addChild(fbxMeshToRecord(node.nodeAttribute as FBXMesh));
 
 	context.nodesConnections.add(createConnection(node, node.parent as FBXNode));
 	context.nodesConnections.add(createConnection(node.nodeAttribute as FBXMesh, node));
@@ -247,7 +247,7 @@ function exportSkeletonNode(fbxFile: FBXFile, node: FBXNode, context: ExportCont
 	const objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	objectsRecord.addChild(fbxNodeToRecord(node, FBX_RECORD_TYPE_LIMB_NODE));
-	objectsRecord.addChild(fbxSkeletonToRecord(node.nodeAttribute));
+	objectsRecord.addChild(fbxSkeletonToRecord(node.nodeAttribute as FBXSkeleton));
 
 	context.nodesConnections.add(createConnection(node, node.parent as FBXNode));
 	context.nodesConnections.add(createConnection(node.nodeAttribute as FBXSkeleton, node));
@@ -257,7 +257,7 @@ function exportCameraNode(fbxFile: FBXFile, node: FBXNode, context: ExportContex
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	objectsRecord.addChild(fbxNodeToRecord(node, FBX_RECORD_TYPE_CAMERA));
-	objectsRecord.addChild(fbxCameraToRecord(node.nodeAttribute));
+	objectsRecord.addChild(fbxCameraToRecord(node.nodeAttribute as FBXCamera));
 
 	context.nodesConnections.add(createConnection(node, node.parent as FBXNode));
 	context.nodesConnections.add(createConnection(node.nodeAttribute as FBXCamera, node));

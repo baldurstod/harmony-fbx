@@ -1,8 +1,9 @@
-import { createFBXRecord } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
-import { createPropertiesRecord } from '../utils/createpropertiesrecord.js';
+import { createFBXRecord } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { createPropertiesRecord } from '../utils/createpropertiesrecord';
+import { FBXAnimCurveNode } from '../model/fbxanimcurvenode';
 
-export function fbxAnimCurveNodeToRecord(fbxAnimCurveNode) {
+export function fbxAnimCurveNodeToRecord(fbxAnimCurveNode: FBXAnimCurveNode) {
 	return createFBXRecord('AnimationCurveNode', {
 		childs: [
 			createPropertiesRecord(fbxAnimCurveNode),

@@ -1,8 +1,9 @@
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordDoubleArray, createFBXRecordSingleInt64, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
-import {createStringProperty, createInt64Property} from '../utils/createfbxproperty.js';
-import {FBX_POSE_BIND_VERSION} from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordDoubleArray, createFBXRecordSingleInt64, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { FBX_POSE_BIND_VERSION } from '../constants';
+import { FBXPose } from '../model/fbxpose';
 
-export function fbxPoseToRecord(fbxPose) {
+export function fbxPoseToRecord(fbxPose: FBXPose) {
 	let poseType = fbxPose.isBindPose ? 'BindPose' : 'RestPose';//TODO: not sure about this
 	let poseNodes = [];
 	for (let poseInfo of fbxPose.poseInfos) {
@@ -10,7 +11,7 @@ export function fbxPoseToRecord(fbxPose) {
 			createFBXRecord('PoseNode', {
 				childs: [
 					createFBXRecordSingleInt64('Node', poseInfo.node.id),
-					createFBXRecordDoubleArray('Matrix', poseInfo.matrix),
+					createFBXRecordDoubleArray('Matrix', poseInfo.matrix as Array<number>),
 				],
 			}),
 		);

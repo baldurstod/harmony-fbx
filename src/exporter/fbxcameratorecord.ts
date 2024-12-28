@@ -1,9 +1,10 @@
-import { fbxPropertyToRecord } from './fbxpropertytorecord.js';
-import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
-import { FBX_GEOMETRY_VERSION } from '../constants.js';
+import { fbxPropertyToRecord } from './fbxpropertytorecord';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { FBX_GEOMETRY_VERSION } from '../constants';
+import { FBXCamera } from '../model/fbxcamera';
 
-export function fbxCameraToRecord(fbxCamera) {
+export function fbxCameraToRecord(fbxCamera: FBXCamera) {
 	return createFBXRecord('NodeAttribute', {
 		childs: [
 			createFBXRecordSingleString('TypeFlags', 'Camera'),

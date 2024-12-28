@@ -1,4 +1,4 @@
-import { FBXTime } from './fbxtime.js';
+import { FBXTime } from './fbxtime';
 
 export class FBXTimeSpan {
 	#start = new FBXTime();

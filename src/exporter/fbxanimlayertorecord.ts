@@ -1,7 +1,8 @@
-import { createFBXRecord } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
+import { createFBXRecord } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { FBXAnimLayer } from '../model/fbxanimlayer';
 
-export function fbxAnimLayerToRecord(fbxAnimLayer) {
+export function fbxAnimLayerToRecord(fbxAnimLayer: FBXAnimLayer) {
 	return createFBXRecord('AnimationLayer', {
 		properties: [
 			createInt64Property(fbxAnimLayer.id),

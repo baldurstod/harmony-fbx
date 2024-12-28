@@ -1,7 +1,8 @@
-import { createFBXRecord, createFBXRecordSingleString } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
+import { createFBXRecord, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { FBXSkeleton } from '../model/fbxskeleton';
 
-export function fbxSkeletonToRecord(fbxSkeleton) {
+export function fbxSkeletonToRecord(fbxSkeleton: FBXSkeleton) {
 	return createFBXRecord('NodeAttribute', {
 		childs: [
 			createFBXRecordSingleString('TypeFlags', 'Skeleton'),

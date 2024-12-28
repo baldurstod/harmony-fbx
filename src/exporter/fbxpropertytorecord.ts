@@ -1,9 +1,9 @@
-import {FBX_PROPERTY_TYPE_DOUBLE_3} from '../enums/propertytype.js';
+import { FBX_PROPERTY_TYPE_DOUBLE_3 } from '../enums/propertytype';
+import { createFBXRecord } from '../utils/createfbxrecord';
+import { createStringProperty, createDoubleProperty } from '../utils/createfbxproperty';
+import { FBXProperty } from '../model/fbxproperty';
 
-import { createFBXRecord } from '../utils/createfbxrecord.js';
-import { createStringProperty, createDoubleProperty } from '../utils/createfbxproperty.js';
-
-export function fbxPropertyToRecord(fbxProperty, name = '') {
+export function fbxPropertyToRecord(fbxProperty: FBXProperty, name = '') {
 	switch (fbxProperty.type) {
 		case FBX_PROPERTY_TYPE_DOUBLE_3:
 			return fbxPropertyDouble3ToRecord(fbxProperty, name);
@@ -14,7 +14,7 @@ export function fbxPropertyToRecord(fbxProperty, name = '') {
 	}
 }
 
-export function fbxPropertyDouble3ToRecord(fbxProperty, name) {
+export function fbxPropertyDouble3ToRecord(fbxProperty: FBXProperty, name: string) {
 	let value = fbxProperty.value;
 	return createFBXRecord('P', {
 		properties: [

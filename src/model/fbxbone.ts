@@ -1,10 +1,11 @@
-import { getUniqueId } from './fbxids.js';
+import { getUniqueId } from './fbxids';
 
 export class FBXBone {
 	#id = getUniqueId();
-	#name = '';
-	constructor(name) {
-		this.name = name;
+	#name: string;
+
+	constructor(name: string) {
+		this.#name = name;
 	}
 
 	set id(id) {

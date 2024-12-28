@@ -1,8 +1,9 @@
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleDouble} from '../utils/createfbxrecord.js';
-import {createStringProperty, createInt64Property} from '../utils/createfbxproperty.js';
-import {FBX_DEFORMER_SKIN_VERSION} from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleDouble } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { FBX_DEFORMER_SKIN_VERSION } from '../constants';
+import { FBXSkin } from '../model/fbxskin';
 
-export function fbxSkinToRecord(fbxSkin) {
+export function fbxSkinToRecord(fbxSkin: FBXSkin) {
 	return createFBXRecord('Deformer', {
 		childs: [
 			createFBXRecordSingleInt32('Version', FBX_DEFORMER_SKIN_VERSION),

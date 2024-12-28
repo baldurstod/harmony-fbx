@@ -1,10 +1,11 @@
-import {fbxPropertyToRecord} from './fbxpropertytorecord.js';
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleInt8, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
-import {createStringProperty, createInt64Property, createInt16Property} from '../utils/createfbxproperty.js';
-import {createPBool, createPEnum, createPVector3D, createPInteger, createPDouble} from '../utils/createprecord.js';
-import { FBX_MODELS_VERSION } from '../constants.js';
+import { fbxPropertyToRecord } from './fbxpropertytorecord';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleInt8, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property, createInt16Property } from '../utils/createfbxproperty';
+import { createPBool, createPEnum, createPVector3D, createPInteger, createPDouble } from '../utils/createprecord';
+import { FBX_MODELS_VERSION } from '../constants';
+import { FBXNode } from '../model/fbxnode';
 
-export function fbxNodeToRecord(fbxNode, type = '') {
+export function fbxNodeToRecord(fbxNode: FBXNode, type = '') {
 	return createFBXRecord('Model', {
 		childs: [
 			createFBXRecordSingleInt32('Version', FBX_MODELS_VERSION),
@@ -49,12 +50,12 @@ export function fbxNodeToRecord(fbxNode, type = '') {
 					createPInteger('DefaultAttributeIndex', 0),
 					createPEnum('InheritType', fbxNode.inheritType),
 
-					createPBool('RotationActive', 1),
+					createPBool('RotationActive', true),
 					createPVector3D('ScalingMax', [0, 0, 0]),
 					createPDouble('PreferedAngleX', 0),
 					createPDouble('PreferedAngleY', 0),
 					createPDouble('PreferedAngleZ', 0),
-					createPBool('lockInfluenceWeights', 0),
+					createPBool('lockInfluenceWeights', false),
 					createFBXRecord('P', {
 						properties: [
 							createStringProperty('filmboxTypeID'),

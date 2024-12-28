@@ -1,8 +1,9 @@
-import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property, createInt32Property } from '../utils/createfbxproperty.js';
-import { FBX_TEXTURE_VERSION } from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property, createInt32Property } from '../utils/createfbxproperty';
+import { FBX_TEXTURE_VERSION } from '../constants';
+import { FBXTexture } from '../model/fbxtexture';
 
-export function fbxTextureToRecord(fbxTexture) {
+export function fbxTextureToRecord(fbxTexture: FBXTexture) {
 	let mediaRecord;
 	let filenameRecord;
 	let relativeFilenameRecord;

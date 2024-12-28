@@ -1,4 +1,4 @@
-import { FBXTimeSpan } from './fbxtimespan.js';
+import { FBXTimeSpan } from './fbxtimespan';
 
 export class FBXTakeInfo {
 	#name = '';

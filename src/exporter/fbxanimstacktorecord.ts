@@ -1,8 +1,9 @@
-import { createFBXRecord } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property } from '../utils/createfbxproperty.js';
-import { createPTime } from '../utils/createprecord.js';
+import { createFBXRecord } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property } from '../utils/createfbxproperty';
+import { createPTime } from '../utils/createprecord';
+import { FBXAnimStack } from '../model/fbxanimstack';
 
-export function fbxAnimStackToRecord(fbxAnimStack) {
+export function fbxAnimStackToRecord(fbxAnimStack: FBXAnimStack) {
 	return createFBXRecord('AnimationStack', {
 		childs: [
 			createFBXRecord('Properties70', {
