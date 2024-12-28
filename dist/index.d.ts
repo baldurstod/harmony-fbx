@@ -1,3 +1,5 @@
+import { mat4 } from 'gl-matrix';
+
 export declare function createDefinitionsRecord(): FBXRecord;
 
 export declare function createEmptyFile(creator?: string, appVendor?: string, appName?: string, appVersion?: string): FBXFile;
@@ -400,6 +402,46 @@ export declare class FBXBone {
     };
 }
 
+export declare class FBXCamera extends FBXNodeAttribute {
+    #private;
+    isFBXCamera: boolean;
+    constructor(manager: FBXManager, name: string);
+    set position(position: FBXProperty);
+    get position(): FBXProperty;
+    set upVector(upVector: FBXProperty);
+    get upVector(): FBXProperty;
+    set interestPosition(interestPosition: FBXProperty);
+    get interestPosition(): FBXProperty;
+    set roll(roll: FBXProperty);
+    get roll(): FBXProperty;
+    set nearPlane(nearPlane: FBXProperty);
+    get nearPlane(): FBXProperty;
+    set farPlane(farPlane: FBXProperty);
+    get farPlane(): FBXProperty;
+    set projectionType(projectionType: FBXProperty);
+    get projectionType(): FBXProperty;
+    set orthoZoom(orthoZoom: FBXProperty);
+    get orthoZoom(): FBXProperty;
+    getAttributeType(): number;
+}
+
+export declare class FBXCluster extends FBXSubDeformer {
+    #private;
+    isFBXCluster: boolean;
+    set linkMode(linkMode: number);
+    get linkMode(): number;
+    set link(link: FBXNode | undefined);
+    get link(): FBXNode | undefined;
+    addVertexIndex(index: number, weight: number): void;
+    get indexes(): number[];
+    get weights(): number[];
+    get subDeformerType(): number;
+    set transformMatrix(transformMatrix: mat4);
+    get transformMatrix(): mat4;
+    set transformLinkMatrix(transformLinkMatrix: mat4);
+    get transformLinkMatrix(): mat4;
+}
+
 declare class FBXCollection extends FBXObject {
     #private;
     isFBXCollection: boolean;
@@ -421,6 +463,11 @@ declare class FBXColor {
     get blue(): number;
     set alpha(alpha: number);
     get alpha(): number;
+}
+
+declare class FBXDeformer extends FBXObject {
+    isFBXDeformer: boolean;
+    get deformerType(): number;
 }
 
 declare class FBXDocument extends FBXCollection {
@@ -455,7 +502,19 @@ export declare class FBXFile {
     };
 }
 
-declare class FBXGlobalSettings extends FBXObject {
+declare class FBXGeometry extends FBXGeometryBase {
+    #private;
+    isFBXGeometry: boolean;
+    addDeformer(deformer: FBXDeformer): void;
+    removeDeformer(deformer: FBXDeformer): void;
+    get deformers(): Set<FBXDeformer>;
+}
+
+declare class FBXGeometryBase extends FBXLayerContainer {
+    isFBXGeometryBase: boolean;
+}
+
+export declare class FBXGlobalSettings extends FBXObject {
     #private;
     isFBXGlobalSettings: boolean;
     set ambientColor(ambientColor: FBXColor);
@@ -472,6 +531,10 @@ export declare class FBXImporter extends EventTarget {
 
 export declare class FBXLayer {
     isFBXLayer: boolean;
+}
+
+declare class FBXLayerContainer extends FBXNodeAttribute {
+    isFBXLayerContainer: boolean;
 }
 
 declare class FBXLayerElement {
@@ -505,9 +568,26 @@ export declare class FBXManager {
     createObject(className: string, objectName: string, ...args: Array<any>): FBXObject;
 }
 
+export declare class FBXMesh extends FBXGeometry {
+    #private;
+    isFBXMesh: boolean;
+    set vertices(vertices: never[]);
+    get vertices(): never[];
+    set normals(normals: never[]);
+    get normals(): never[];
+    set polygons(polygons: never[]);
+    get polygons(): never[];
+    set edges(edges: never[]);
+    get edges(): never[];
+    set uv(uv: never[]);
+    get uv(): never[];
+    set uvIndex(uvIndex: never[]);
+    get uvIndex(): never[];
+}
+
 export declare function fbxNameClass(name: string, className: string): string;
 
-declare class FBXNode extends FBXObject {
+export declare class FBXNode extends FBXObject {
     #private;
     isFBXNode: boolean;
     constructor(manager: FBXManager, name: string);
@@ -553,6 +633,27 @@ declare class FBXObject {
     createProperty(type: FbxPropertyType, name: string, value: any, flags: number): FBXProperty;
     getAllProperties(): Set<FBXProperty>;
     findProperty(propertyName: string): FBXProperty | null;
+}
+
+export declare class FBXPose extends FBXObject {
+    #private;
+    isFBXPose: boolean;
+    set isBindPose(isBindPose: boolean);
+    get isBindPose(): boolean;
+    get isRestPose(): boolean;
+    add(node: FBXNode, matrix: mat4, matrixIsLocal: boolean): void;
+    get poseInfos(): FBXPoseInfo[];
+}
+
+declare class FBXPoseInfo {
+    #private;
+    constructor(node: FBXNode, matrix: mat4, matrixIsLocal: boolean);
+    set matrix(matrix: mat4);
+    get matrix(): mat4;
+    set matrixIsLocal(matrixIsLocal: boolean);
+    get matrixIsLocal(): boolean;
+    set node(node: FBXNode);
+    get node(): FBXNode;
 }
 
 declare class FBXProperty {
@@ -654,6 +755,39 @@ export declare class FBXScene extends FBXDocument {
 
 export declare function fbxSceneToFBXFile(scene: FBXScene, creator?: string, appVendor?: string, appName?: string, appVersion?: string): FBXFile;
 
+export declare class FBXSkeleton extends FBXNodeAttribute {
+    skeletonType: SkeletonType;
+    isFBXSkeleton: boolean;
+    constructor(manager: FBXManager, name: string, skeletonType: SkeletonType);
+    getAttributeType(): number;
+}
+
+export declare class FBXSkin extends FBXDeformer {
+    #private;
+    isFBXSkin: boolean;
+    set geometry(geometry: FBXGeometry | undefined);
+    get geometry(): FBXGeometry | undefined;
+    set skinningType(skinningType: number);
+    get skinningType(): number;
+    addCluster(fbxCluster: FBXCluster): void;
+    removeCluster(fbxCluster: FBXCluster): void;
+    get clusters(): Set<FBXCluster>;
+    get deformerType(): number;
+}
+
+declare class FBXSubDeformer extends FBXObject {
+    isFBXSubDeformer: boolean;
+    get subDeformerType(): number;
+}
+
+declare class FBXSurfaceLambert extends FBXSurfaceMaterial {
+    #private;
+    isFBXSurfaceLambert: boolean;
+    constructor(manager: FBXManager, name: string);
+    set diffuse(diffuse: FBXProperty);
+    get diffuse(): FBXProperty;
+}
+
 declare class FBXSurfaceMaterial extends FBXObject {
     #private;
     isFBXSurfaceMaterial: boolean;
@@ -662,6 +796,11 @@ declare class FBXSurfaceMaterial extends FBXObject {
     get shadingModel(): any;
     set multiLayer(multiLayer: any);
     get multiLayer(): any;
+}
+
+export declare class FBXSurfacePhong extends FBXSurfaceLambert {
+    isFBXSurfacePhong: boolean;
+    constructor(manager: FBXManager, name: string);
 }
 
 export declare class FBXTakeInfo {
@@ -673,6 +812,15 @@ export declare class FBXTakeInfo {
     get localTimeSpan(): FBXTimeSpan;
     set referenceTimeSpan(referenceTimeSpan: FBXTimeSpan);
     get referenceTimeSpan(): FBXTimeSpan;
+}
+
+export declare class FBXTexture extends FBXObject {
+    #private;
+    isFBXTexture: boolean;
+    set type(type: string);
+    get type(): string;
+    set media(media: FBXVideo | undefined);
+    get media(): FBXVideo | undefined;
 }
 
 export declare class FBXTime {
@@ -718,6 +866,15 @@ export declare enum FbxType {
     FloatArray = 102,
     Int32Array = 105,
     Int64Array = 108
+}
+
+export declare class FBXVideo extends FBXObject {
+    #private;
+    isFBXVideo: boolean;
+    set content(content: Blob | undefined);
+    get content(): Blob | undefined;
+    set type(type: string);
+    get type(): string;
 }
 
 export declare enum MappingMode {

@@ -1,5 +1,36 @@
+import { mat4 } from 'gl-matrix';
 import { BinaryReader } from 'harmony-binary-reader';
 import { inflate } from 'pako';
+
+class FBXManager {
+    #objects = new Set();
+    #documents = new Set();
+    isFBXManager = true;
+    static #registry = new Map();
+    destroy() {
+        this.#objects.clear();
+        this.#documents.clear();
+    }
+    static registerClass(className, classConstructor) {
+        FBXManager.#registry.set(className, classConstructor);
+    }
+    createObject(className, objectName, ...args) {
+        const classConstructor = FBXManager.#registry.get(className);
+        if (!classConstructor) {
+            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
+        }
+        const createdObject = new classConstructor(this, objectName, args);
+        if (createdObject) {
+            if (createdObject.isFBXDocument) {
+                this.#documents.add(createdObject);
+            }
+            else {
+                this.#objects.add(createdObject);
+            }
+        }
+        return createdObject;
+    }
+}
 
 // I'm not sure there is reserved ids, let's start big
 let uniqueId = 1000000n;
@@ -267,6 +298,517 @@ class FBXObject {
     }
 }
 
+const FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN = 0;
+const FBX_NODE_ATTRIBUTE_TYPE_NULL = 1;
+const FBX_NODE_ATTRIBUTE_TYPE_MARKER = 2;
+const FBX_NODE_ATTRIBUTE_TYPE_SKELETON = 3;
+const FBX_NODE_ATTRIBUTE_TYPE_MESH = 4;
+const FBX_NODE_ATTRIBUTE_TYPE_NURBS = 5;
+const FBX_NODE_ATTRIBUTE_TYPE_PATCH = 6;
+const FBX_NODE_ATTRIBUTE_TYPE_CAMERA = 7;
+const FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO = 8;
+const FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER = 9;
+const FBX_NODE_ATTRIBUTE_TYPE_LIGHT = 10;
+const FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE = 11;
+const FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER = 12;
+const FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE = 13;
+const FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE = 14;
+const FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY = 15;
+const FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE = 16;
+const FBX_NODE_ATTRIBUTE_TYPE_SHAPE = 17;
+const FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP = 18;
+const FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV = 19;
+const FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT = 20;
+
+class FBXNodeAttribute extends FBXObject {
+    isFBXNodeAttribute = true;
+    getAttributeType() {
+        return FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN;
+    }
+}
+
+const FBX_PROPERTY_FLAG_NONE = 0;
+const FBX_PROPERTY_FLAG_STATIC = 1 << 0;
+const FBX_PROPERTY_FLAG_ANIMATABLE = 1 << 1;
+const FBX_PROPERTY_FLAG_ANIMATED = 1 << 2;
+const FBX_PROPERTY_FLAG_IMPORTED = 1 << 3;
+const FBX_PROPERTY_FLAG_USER_DEFINED = 1 << 4;
+const FBX_PROPERTY_FLAG_HIDDEN = 1 << 5;
+const FBX_PROPERTY_FLAG_NOT_SAVABLE = 1 << 6;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 = 1 << 7;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 = 1 << 8;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 = 1 << 9;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_3 = 1 << 10;
+const FBX_PROPERTY_FLAG_LOCKED_ALL = FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_3;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_0 = 1 << 11;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_1 = 1 << 12;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_2 = 1 << 13;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_3 = 1 << 14;
+const FBX_PROPERTY_FLAG_MUTED_ALL = FBX_PROPERTY_FLAG_MUTED_MEMBER_0 | FBX_PROPERTY_FLAG_MUTED_MEMBER_1 | FBX_PROPERTY_FLAG_MUTED_MEMBER_2 | FBX_PROPERTY_FLAG_MUTED_MEMBER_3;
+
+class FBXCamera extends FBXNodeAttribute {
+    #position;
+    #upVector;
+    #interestPosition;
+    #roll;
+    //#opticalCenterX;
+    //#opticalCenterY;
+    #nearPlane;
+    #farPlane;
+    #projectionType;
+    #orthoZoom;
+    isFBXCamera = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.#position = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Position', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
+        this.#upVector = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'UpVector', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
+        this.#interestPosition = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'InterestPosition', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
+        this.#roll = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'Roll', 0, FBX_PROPERTY_FLAG_STATIC);
+        //this.#opticalCenterX = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'OpticalCenterX', 0, FBX_PROPERTY_FLAG_STATIC);
+        //this.#opticalCenterY = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'OpticalCenterY', 0, FBX_PROPERTY_FLAG_STATIC);
+        this.#nearPlane = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'NearPlane', 0, FBX_PROPERTY_FLAG_STATIC);
+        this.#farPlane = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'FarPlane', 0, FBX_PROPERTY_FLAG_STATIC);
+        this.#projectionType = this.createProperty(FBX_PROPERTY_TYPE_ENUM, 'CameraProjectionType', 0, FBX_PROPERTY_FLAG_STATIC);
+        this.#orthoZoom = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE, 'OrthoZoom', 1, FBX_PROPERTY_FLAG_STATIC);
+    }
+    set position(position) {
+        this.#position = position;
+    }
+    get position() {
+        return this.#position;
+    }
+    set upVector(upVector) {
+        this.#upVector = upVector;
+    }
+    get upVector() {
+        return this.#upVector;
+    }
+    set interestPosition(interestPosition) {
+        this.#interestPosition = interestPosition;
+    }
+    get interestPosition() {
+        return this.#interestPosition;
+    }
+    set roll(roll) {
+        this.#roll = roll;
+    }
+    get roll() {
+        return this.#roll;
+    }
+    set nearPlane(nearPlane) {
+        this.#nearPlane = nearPlane;
+    }
+    get nearPlane() {
+        return this.#nearPlane;
+    }
+    set farPlane(farPlane) {
+        this.#farPlane = farPlane;
+    }
+    get farPlane() {
+        return this.#farPlane;
+    }
+    set projectionType(projectionType) {
+        this.#projectionType = projectionType;
+    }
+    get projectionType() {
+        return this.#projectionType;
+    }
+    set orthoZoom(orthoZoom) {
+        this.#orthoZoom = orthoZoom;
+    }
+    get orthoZoom() {
+        return this.#orthoZoom;
+    }
+    getAttributeType() {
+        return FBX_NODE_ATTRIBUTE_TYPE_CAMERA;
+    }
+}
+FBXManager.registerClass('FBXCamera', FBXCamera);
+
+const FBX_SUB_DEFORMER_TYPE_UNKNOWN = 0;
+const FBX_SUB_DEFORMER_TYPE_CLUSTER = 1;
+
+class FBXSubDeformer extends FBXObject {
+    isFBXSubDeformer = true;
+    get subDeformerType() {
+        return FBX_SUB_DEFORMER_TYPE_UNKNOWN;
+    }
+}
+
+const FBX_LINK_MODE_NORMALIZE = 0;
+
+class FBXCluster extends FBXSubDeformer {
+    #linkMode = FBX_LINK_MODE_NORMALIZE;
+    #link;
+    #indexes = [];
+    #weights = [];
+    #transformMatrix = mat4.create();
+    #transformLinkMatrix = mat4.create();
+    //#transformParentMatrix;
+    isFBXCluster = true;
+    set linkMode(linkMode) {
+        this.#linkMode = linkMode;
+    }
+    get linkMode() {
+        return this.#linkMode;
+    }
+    set link(link) {
+        this.#link = link;
+    }
+    get link() {
+        return this.#link;
+    }
+    addVertexIndex(index, weight) {
+        this.#indexes.push(index);
+        this.#weights.push(weight);
+    }
+    get indexes() {
+        return this.#indexes;
+    }
+    get weights() {
+        return this.#weights;
+    }
+    get subDeformerType() {
+        return FBX_SUB_DEFORMER_TYPE_CLUSTER;
+    }
+    set transformMatrix(transformMatrix) {
+        mat4.copy(this.#transformMatrix, transformMatrix);
+    }
+    get transformMatrix() {
+        return mat4.clone(this.#transformMatrix);
+    }
+    set transformLinkMatrix(transformLinkMatrix) {
+        mat4.copy(this.#transformLinkMatrix, transformLinkMatrix);
+    }
+    get transformLinkMatrix() {
+        return mat4.clone(this.#transformLinkMatrix);
+    }
+}
+FBXManager.registerClass('FBXCluster', FBXCluster);
+
+class FBXColor {
+    #red;
+    #green;
+    #blue;
+    #alpha;
+    isFBXColor = true;
+    constructor(red = 0.0, green = 0.0, blue = 0.0, alpha = 1.0) {
+        this.#red = red;
+        this.#green = green;
+        this.#blue = blue;
+        this.#alpha = alpha;
+    }
+    set red(red) {
+        this.#red = red;
+    }
+    get red() {
+        return this.#red;
+    }
+    set green(green) {
+        this.#green = green;
+    }
+    get green() {
+        return this.#green;
+    }
+    set blue(blue) {
+        this.#blue = blue;
+    }
+    get blue() {
+        return this.#blue;
+    }
+    set alpha(alpha) {
+        this.#alpha = alpha;
+    }
+    get alpha() {
+        return this.#alpha;
+    }
+}
+
+class FBXAxisSystem {
+    isFBXAxisSystem = true;
+    #upAxis;
+    #frontAxis;
+    constructor(upAxis, frontAxis) {
+        this.#upAxis = upAxis;
+        this.#frontAxis = frontAxis;
+    }
+    set upAxis(upAxis) {
+        this.#upAxis = upAxis;
+    }
+    get upAxis() {
+        return this.#upAxis;
+    }
+    set frontAxis(frontAxis) {
+        this.#frontAxis = frontAxis;
+    }
+    get frontAxis() {
+        return this.#frontAxis;
+    }
+    get coordAxis() {
+        return this.#frontAxis;
+    }
+}
+
+class FBXGlobalSettings extends FBXObject {
+    #ambientColor = new FBXColor();
+    #defaultCamera = '';
+    #axisSystem = new FBXAxisSystem(2, 1);
+    isFBXGlobalSettings = true;
+    set ambientColor(ambientColor) {
+        this.#ambientColor = ambientColor;
+    }
+    get ambientColor() {
+        return this.#ambientColor;
+    }
+    set defaultCamera(defaultCamera) {
+        this.#defaultCamera = defaultCamera;
+    }
+    get defaultCamera() {
+        return this.#defaultCamera;
+    }
+}
+FBXManager.registerClass('FBXGlobalSettings', FBXGlobalSettings);
+
+class FBXLayerContainer extends FBXNodeAttribute {
+    isFBXLayerContainer = true;
+}
+
+class FBXGeometryBase extends FBXLayerContainer {
+    isFBXGeometryBase = true;
+}
+
+class FBXGeometry extends FBXGeometryBase {
+    #deformers = new Set();
+    isFBXGeometry = true;
+    addDeformer(deformer) {
+        this.#deformers.add(deformer);
+    }
+    removeDeformer(deformer) {
+        this.#deformers.delete(deformer);
+    }
+    get deformers() {
+        return this.#deformers;
+    }
+}
+
+class FBXMesh extends FBXGeometry {
+    #vertices = [];
+    #normals = [];
+    #polygons = [];
+    #edges = [];
+    #uv = [];
+    #uvIndex = [];
+    isFBXMesh = true;
+    set vertices(vertices) {
+        this.#vertices = vertices;
+    }
+    get vertices() {
+        return this.#vertices;
+    }
+    set normals(normals) {
+        this.#normals = normals;
+    }
+    get normals() {
+        return this.#normals;
+    }
+    set polygons(polygons) {
+        this.#polygons = polygons;
+    }
+    get polygons() {
+        return this.#polygons;
+    }
+    set edges(edges) {
+        this.#edges = edges;
+    }
+    get edges() {
+        return this.#edges;
+    }
+    set uv(uv) {
+        this.#uv = uv;
+    }
+    get uv() {
+        return this.#uv;
+    }
+    set uvIndex(uvIndex) {
+        this.#uvIndex = uvIndex;
+    }
+    get uvIndex() {
+        return this.#uvIndex;
+    }
+}
+FBXManager.registerClass('FBXMesh', FBXMesh);
+
+//Rotation of child is applied before parent's scaling
+const FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST = 0;
+//Scaling of parent is applied before rotation of child
+const FBX_INHERIT_TYPE_PARENT_SCALING_FIRST = 1;
+//Scaling of parent do not affect children
+const FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED = 1;
+
+class FBXNode extends FBXObject {
+    #parent = null;
+    #childs = new Set();
+    #materials = [];
+    #nodeAttribute;
+    #inheritType = FBX_INHERIT_TYPE_PARENT_SCALING_FIRST;
+    #show;
+    #localTranslation;
+    #localRotation;
+    #localScaling;
+    isFBXNode = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.#show = this.createProperty(FBX_PROPERTY_TYPE_BOOL, 'Show', 1.0, FBX_PROPERTY_FLAG_STATIC);
+        this.#localTranslation = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Translation', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
+        this.#localRotation = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Rotation', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
+        this.#localScaling = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Lcl Scaling', [1, 1, 1], FBX_PROPERTY_FLAG_STATIC);
+    }
+    set parent(parent) {
+        if (this.#checkParent(parent)) {
+            if (this.#parent) {
+                this.#parent.#childs.delete(this);
+            }
+            this.#parent = parent;
+            if (parent) {
+                parent.#childs.add(this);
+            }
+        }
+        else {
+            console.log(this, parent);
+            throw 'Invalid parent';
+        }
+    }
+    addChild(child) {
+        child.parent = this;
+    }
+    removeChild(child) {
+        child.parent = null;
+    }
+    get childs() {
+        return this.#childs;
+    }
+    get parent() {
+        return this.#parent;
+    }
+    #checkParent(parent) {
+        if (parent === null) {
+            return true;
+        }
+        if (!parent.isFBXNode) {
+            console.log('Parent is not FBXNode');
+            return false;
+        }
+        let current = parent;
+        for (;;) {
+            if (current == this) {
+                console.log('Parent hierarchy contains self');
+                return false;
+            }
+            if (!(current = current.parent)) {
+                break;
+            }
+        }
+        return true;
+    }
+    set nodeAttribute(nodeAttribute) {
+        this.#nodeAttribute = nodeAttribute;
+    }
+    get nodeAttribute() {
+        return this.#nodeAttribute;
+    }
+    set inheritType(inheritType) {
+        this.#inheritType = inheritType;
+    }
+    get inheritType() {
+        return this.#inheritType;
+    }
+    set show(show) {
+        this.#show.value = show;
+    }
+    get show() {
+        return this.#show.value;
+    }
+    set localTranslation(localTranslation) {
+        this.#localTranslation = localTranslation;
+    }
+    get localTranslation() {
+        return this.#localTranslation;
+    }
+    set localRotation(localRotation) {
+        this.#localRotation = localRotation;
+    }
+    get localRotation() {
+        return this.#localRotation;
+    }
+    set localScaling(localScaling) {
+        this.#localScaling = localScaling;
+    }
+    get localScaling() {
+        return this.#localScaling;
+    }
+    addMaterial(surfaceMaterial) {
+        this.#materials.push(surfaceMaterial);
+    }
+    get materials() {
+        return this.#materials;
+    }
+    toJSON() {
+        return {};
+    }
+}
+FBXManager.registerClass('FBXNode', FBXNode);
+
+class FBXPoseInfo {
+    #matrix = mat4.create();
+    #matrixIsLocal = false;
+    #node;
+    constructor(node, matrix, matrixIsLocal) {
+        this.#node = node;
+        mat4.copy(this.#matrix, matrix);
+        this.#matrixIsLocal = matrixIsLocal;
+    }
+    set matrix(matrix) {
+        this.#matrix = matrix;
+    }
+    get matrix() {
+        return this.#matrix;
+    }
+    set matrixIsLocal(matrixIsLocal) {
+        this.#matrixIsLocal = matrixIsLocal;
+    }
+    get matrixIsLocal() {
+        return this.#matrixIsLocal;
+    }
+    set node(node) {
+        this.#node = node;
+    }
+    get node() {
+        return this.#node;
+    }
+}
+
+class FBXPose extends FBXObject {
+    #isBindPose = true;
+    #poseInfos = [];
+    isFBXPose = true;
+    set isBindPose(isBindPose) {
+        this.#isBindPose = isBindPose;
+    }
+    get isBindPose() {
+        return this.#isBindPose;
+    }
+    get isRestPose() {
+        return !this.#isBindPose;
+    }
+    add(node, matrix, matrixIsLocal) {
+        this.#poseInfos.push(new FBXPoseInfo(node, matrix, matrixIsLocal));
+    }
+    get poseInfos() {
+        return this.#poseInfos;
+    }
+}
+FBXManager.registerClass('FBXPose', FBXPose);
+
 class FBXCollection extends FBXObject {
     #members = new Set();
     isFBXCollection = true;
@@ -295,36 +837,6 @@ class FBXDocument extends FBXCollection {
     }
     get documentInfo() {
         return this.#documentInfo;
-    }
-}
-
-class FBXManager {
-    #objects = new Set();
-    #documents = new Set();
-    isFBXManager = true;
-    static #registry = new Map();
-    destroy() {
-        this.#objects.clear();
-        this.#documents.clear();
-    }
-    static registerClass(className, classConstructor) {
-        FBXManager.#registry.set(className, classConstructor);
-    }
-    createObject(className, objectName, ...args) {
-        const classConstructor = FBXManager.#registry.get(className);
-        if (!classConstructor) {
-            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
-        }
-        const createdObject = new classConstructor(this, objectName, args);
-        if (createdObject) {
-            if (createdObject.isFBXDocument) {
-                this.#documents.add(createdObject);
-            }
-            else {
-                this.#objects.add(createdObject);
-            }
-        }
-        return createdObject;
     }
 }
 
@@ -360,6 +872,164 @@ class FBXScene extends FBXDocument {
     }
 }
 FBXManager.registerClass('FBXScene', FBXScene);
+
+class FBXSkeleton extends FBXNodeAttribute {
+    skeletonType;
+    isFBXSkeleton = true;
+    constructor(manager, name, skeletonType) {
+        super(manager, name);
+        this.skeletonType = skeletonType;
+    }
+    getAttributeType() {
+        return FBX_NODE_ATTRIBUTE_TYPE_SKELETON;
+    }
+}
+FBXManager.registerClass('FBXSkeleton', FBXSkeleton);
+
+const FBX_DEFORMER_TYPE_UNKNOWN = 0;
+const FBX_DEFORMER_TYPE_SKIN = 1;
+
+class FBXDeformer extends FBXObject {
+    isFBXDeformer = true;
+    get deformerType() {
+        return FBX_DEFORMER_TYPE_UNKNOWN;
+    }
+}
+
+const FBX_SKINNING_TYPE_RIGID = 0;
+const FBX_SKINNING_TYPE_LINEAR = 1;
+const FBX_SKINNING_TYPE_DUAL_QUATERNION = 2;
+const FBX_SKINNING_TYPE_BLEND = 3;
+
+class FBXSkin extends FBXDeformer {
+    #geometry;
+    #skinningType = FBX_SKINNING_TYPE_LINEAR;
+    #clusters = new Set();
+    isFBXSkin = true;
+    set geometry(geometry) {
+        if (geometry && !geometry.isFBXGeometry) {
+            throw 'geometry must be of type FBXGeometry';
+        }
+        if (this.#geometry) {
+            this.#geometry.removeDeformer(this);
+        }
+        if (geometry) {
+            geometry.addDeformer(this);
+        }
+        this.#geometry = geometry;
+    }
+    get geometry() {
+        return this.#geometry;
+    }
+    set skinningType(skinningType) {
+        this.#skinningType = skinningType;
+    }
+    get skinningType() {
+        return this.#skinningType;
+    }
+    addCluster(fbxCluster) {
+        this.#clusters.add(fbxCluster);
+    }
+    removeCluster(fbxCluster) {
+        this.#clusters.delete(fbxCluster);
+    }
+    get clusters() {
+        return this.#clusters;
+    }
+    get deformerType() {
+        return FBX_DEFORMER_TYPE_SKIN;
+    }
+}
+FBXManager.registerClass('FBXSkin', FBXSkin);
+
+class FBXSurfaceMaterial extends FBXObject {
+    #shadingModel;
+    #multiLayer;
+    isFBXSurfaceMaterial = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.#shadingModel = this.createProperty(FBX_PROPERTY_TYPE_STRING, 'ShadingModel', 'Unknown', FBX_PROPERTY_FLAG_STATIC);
+        this.#multiLayer = this.createProperty(FBX_PROPERTY_TYPE_BOOL, 'MultiLayer', false, FBX_PROPERTY_FLAG_STATIC);
+    }
+    set shadingModel(shadingModel) {
+        this.#shadingModel.value = shadingModel;
+    }
+    get shadingModel() {
+        return this.#shadingModel.value;
+    }
+    set multiLayer(multiLayer) {
+        this.#multiLayer.value = multiLayer;
+    }
+    get multiLayer() {
+        return this.#multiLayer.value;
+    }
+}
+FBXManager.registerClass('FBXSurfaceMaterial', FBXSurfaceMaterial);
+
+class FBXSurfaceLambert extends FBXSurfaceMaterial {
+    #diffuse;
+    isFBXSurfaceLambert = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.shadingModel = 'Lambert';
+        this.#diffuse = this.createProperty(FBX_PROPERTY_TYPE_COLOR_3, 'DiffuseColor', [0.2, 0.2, 0.2], FBX_PROPERTY_FLAG_STATIC);
+    }
+    set diffuse(diffuse) {
+        console.assert(diffuse.isFBXProperty && diffuse.type == FBX_PROPERTY_TYPE_COLOR_3, "diffuse is not an FBXProperty");
+        this.#diffuse = diffuse;
+    }
+    get diffuse() {
+        return this.#diffuse;
+    }
+}
+FBXManager.registerClass('FBXSurfaceLambert', FBXSurfaceLambert);
+
+class FBXSurfacePhong extends FBXSurfaceLambert {
+    isFBXSurfacePhong = true;
+    constructor(manager, name) {
+        super(manager, name);
+        this.shadingModel = 'Phong';
+    }
+}
+FBXManager.registerClass('FBXSurfacePhong', FBXSurfacePhong);
+
+class FBXTexture extends FBXObject {
+    #media;
+    #type = 'TextureVideoClip';
+    isFBXTexture = true;
+    set type(type) {
+        throw 'We might want to check the exporter if we change the type';
+    }
+    get type() {
+        return this.#type;
+    }
+    set media(media) {
+        this.#media = media;
+    }
+    get media() {
+        return this.#media;
+    }
+}
+FBXManager.registerClass('FBXTexture', FBXTexture);
+
+class FBXVideo extends FBXObject {
+    #content;
+    #type = 'Clip';
+    isFBXVideo = true;
+    set content(content) {
+        this.#content = content;
+    }
+    get content() {
+        return this.#content;
+    }
+    set type(type) {
+        throw 'We might want to check the exporter if we change the type';
+    }
+    get type() {
+        return this.#type;
+    }
+}
+FBXManager.registerClass('FBXVideo', FBXVideo);
 
 var FbxType;
 (function (FbxType) {
@@ -2483,13 +3153,6 @@ const FBX_TC_MINUTE = FBX_TC_SECOND * 60n;
 const FBX_TC_HOUR = FBX_TC_MINUTE * 60n;
 const FBX_TC_DAY = FBX_TC_MINUTE * 24n;
 
-//Rotation of child is applied before parent's scaling
-const FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST = 0;
-//Scaling of parent is applied before rotation of child
-const FBX_INHERIT_TYPE_PARENT_SCALING_FIRST = 1;
-//Scaling of parent do not affect children
-const FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED = 1;
-
 var MappingMode;
 (function (MappingMode) {
     MappingMode[MappingMode["None"] = 0] = "None";
@@ -2506,49 +3169,8 @@ const FBX_MAPPING_MODE_POLYGON = 3;
 const FBX_MAPPING_MODE_EDGE = 4;
 const FBX_MAPPING_MODE_ALL_SAME = 5;
 
-const FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN = 0;
-const FBX_NODE_ATTRIBUTE_TYPE_NULL = 1;
-const FBX_NODE_ATTRIBUTE_TYPE_MARKER = 2;
-const FBX_NODE_ATTRIBUTE_TYPE_SKELETON = 3;
-const FBX_NODE_ATTRIBUTE_TYPE_MESH = 4;
-const FBX_NODE_ATTRIBUTE_TYPE_NURBS = 5;
-const FBX_NODE_ATTRIBUTE_TYPE_PATCH = 6;
-const FBX_NODE_ATTRIBUTE_TYPE_CAMERA = 7;
-const FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO = 8;
-const FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER = 9;
-const FBX_NODE_ATTRIBUTE_TYPE_LIGHT = 10;
-const FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE = 11;
-const FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER = 12;
-const FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE = 13;
-const FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE = 14;
-const FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY = 15;
-const FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE = 16;
-const FBX_NODE_ATTRIBUTE_TYPE_SHAPE = 17;
-const FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP = 18;
-const FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV = 19;
-const FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT = 20;
-
 const FBX_PROJECTION_TYPE_PERSPECTIVE = 0;
 const FBX_PROJECTION_TYPE_ORTHOGONAL = 1;
-
-const FBX_PROPERTY_FLAG_NONE = 0;
-const FBX_PROPERTY_FLAG_STATIC = 1 << 0;
-const FBX_PROPERTY_FLAG_ANIMATABLE = 1 << 1;
-const FBX_PROPERTY_FLAG_ANIMATED = 1 << 2;
-const FBX_PROPERTY_FLAG_IMPORTED = 1 << 3;
-const FBX_PROPERTY_FLAG_USER_DEFINED = 1 << 4;
-const FBX_PROPERTY_FLAG_HIDDEN = 1 << 5;
-const FBX_PROPERTY_FLAG_NOT_SAVABLE = 1 << 6;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 = 1 << 7;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 = 1 << 8;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 = 1 << 9;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_3 = 1 << 10;
-const FBX_PROPERTY_FLAG_LOCKED_ALL = FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_3;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_0 = 1 << 11;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_1 = 1 << 12;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_2 = 1 << 13;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_3 = 1 << 14;
-const FBX_PROPERTY_FLAG_MUTED_ALL = FBX_PROPERTY_FLAG_MUTED_MEMBER_0 | FBX_PROPERTY_FLAG_MUTED_MEMBER_1 | FBX_PROPERTY_FLAG_MUTED_MEMBER_2 | FBX_PROPERTY_FLAG_MUTED_MEMBER_3;
 
 var ReferenceMode;
 (function (ReferenceMode) {
@@ -2573,11 +3195,6 @@ const FBX_SKELETON_TYPE_ROOT = 0;
 const FBX_SKELETON_TYPE_LIMB = 1;
 const FBX_SKELETON_TYPE_LIMB_NODE = 2;
 const FBX_SKELETON_TYPE_EFFECTOR = 3;
-
-const FBX_SKINNING_TYPE_RIGID = 0;
-const FBX_SKINNING_TYPE_LINEAR = 1;
-const FBX_SKINNING_TYPE_DUAL_QUATERNION = 2;
-const FBX_SKINNING_TYPE_BLEND = 3;
 
 var TimeMode;
 (function (TimeMode) {
@@ -2749,31 +3366,6 @@ class FBXAnimCurveKey {
     }
 }
 
-class FBXAxisSystem {
-    isFBXAxisSystem = true;
-    #upAxis;
-    #frontAxis;
-    constructor(upAxis, frontAxis) {
-        this.#upAxis = upAxis;
-        this.#frontAxis = frontAxis;
-    }
-    set upAxis(upAxis) {
-        this.#upAxis = upAxis;
-    }
-    get upAxis() {
-        return this.#upAxis;
-    }
-    set frontAxis(frontAxis) {
-        this.#frontAxis = frontAxis;
-    }
-    get frontAxis() {
-        return this.#frontAxis;
-    }
-    get coordAxis() {
-        return this.#frontAxis;
-    }
-}
-
 class FBXBone {
     #id = getUniqueId();
     #name;
@@ -2893,4 +3485,4 @@ class FBXTakeInfo {
     }
 }
 
-export { FBXAnimCurveKey, FBXAxisSystem, FBXBone, FBXExporter, FBXFile, FBXImporter, FBXLayer, FBXLayerElementMaterial, FBXManager, FBXScene, FBXTakeInfo, FBXTime, FBXTimeSpan, FBX_BINARY_MAGIC, FBX_DATA_LEN, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DEFORMER_CLUSTER_VERSION, FBX_DEFORMER_SKIN_VERSION, FBX_GEOMETRY_BINORMAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_NORMAL_VERSION, FBX_GEOMETRY_TANGENT_VERSION, FBX_GEOMETRY_UV_VERSION, FBX_GEOMETRY_VERSION, FBX_HEADER_VERSION, FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED, FBX_KTIME, FBX_MAPPING_MODE_ALL_SAME, FBX_MAPPING_MODE_CONTROL_POINT, FBX_MAPPING_MODE_EDGE, FBX_MAPPING_MODE_NONE, FBX_MAPPING_MODE_POLYGON, FBX_MAPPING_MODE_POLYGON_VERTEX, FBX_MATERIAL_VERSION, FBX_MODELS_VERSION, FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY, FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT, FBX_NODE_ATTRIBUTE_TYPE_CAMERA, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER, FBX_NODE_ATTRIBUTE_TYPE_LIGHT, FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP, FBX_NODE_ATTRIBUTE_TYPE_MARKER, FBX_NODE_ATTRIBUTE_TYPE_MESH, FBX_NODE_ATTRIBUTE_TYPE_NULL, FBX_NODE_ATTRIBUTE_TYPE_NURBS, FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE, FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE, FBX_NODE_ATTRIBUTE_TYPE_PATCH, FBX_NODE_ATTRIBUTE_TYPE_SHAPE, FBX_NODE_ATTRIBUTE_TYPE_SKELETON, FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV, FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN, FBX_POSE_BIND_VERSION, FBX_PROJECTION_TYPE_ORTHOGONAL, FBX_PROJECTION_TYPE_PERSPECTIVE, FBX_PROPERTY_FLAG_ANIMATABLE, FBX_PROPERTY_FLAG_ANIMATED, FBX_PROPERTY_FLAG_HIDDEN, FBX_PROPERTY_FLAG_IMPORTED, FBX_PROPERTY_FLAG_LOCKED_ALL, FBX_PROPERTY_FLAG_LOCKED_MEMBER_0, FBX_PROPERTY_FLAG_LOCKED_MEMBER_1, FBX_PROPERTY_FLAG_LOCKED_MEMBER_2, FBX_PROPERTY_FLAG_LOCKED_MEMBER_3, FBX_PROPERTY_FLAG_MUTED_ALL, FBX_PROPERTY_FLAG_MUTED_MEMBER_0, FBX_PROPERTY_FLAG_MUTED_MEMBER_1, FBX_PROPERTY_FLAG_MUTED_MEMBER_2, FBX_PROPERTY_FLAG_MUTED_MEMBER_3, FBX_PROPERTY_FLAG_NONE, FBX_PROPERTY_FLAG_NOT_SAVABLE, FBX_PROPERTY_FLAG_STATIC, FBX_PROPERTY_FLAG_USER_DEFINED, FBX_PROPERTY_TYPE_BOOL, FBX_PROPERTY_TYPE_COLOR_3, FBX_PROPERTY_TYPE_COMPOUND, FBX_PROPERTY_TYPE_DOUBLE, FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_ENUM, FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME, FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES, FBX_REFERENCE_MODE_DIRECT, FBX_REFERENCE_MODE_INDEX, FBX_REFERENCE_MODE_INDEX_TO_DIRECT, FBX_SCENEINFO_VERSION, FBX_SKELETON_TYPE_EFFECTOR, FBX_SKELETON_TYPE_LIMB, FBX_SKELETON_TYPE_LIMB_NODE, FBX_SKELETON_TYPE_ROOT, FBX_SKINNING_TYPE_BLEND, FBX_SKINNING_TYPE_DUAL_QUATERNION, FBX_SKINNING_TYPE_LINEAR, FBX_SKINNING_TYPE_RIGID, FBX_TC_DAY, FBX_TC_HOUR, FBX_TC_LEGACY_MILLISECOND, FBX_TC_LEGACY_SECOND, FBX_TC_MILLISECOND, FBX_TC_MINUTE, FBX_TC_SECOND, FBX_TEMPLATES_VERSION, FBX_TEXTURE_VERSION, FBX_TIME_MODE_CUSTOM, FBX_TIME_MODE_DEFAULT, FBX_TIME_MODE_FILM_FULL_FRAME, FBX_TIME_MODE_FRAMES, FBX_TIME_MODE_FRAMES_100, FBX_TIME_MODE_FRAMES_1000, FBX_TIME_MODE_FRAMES_119_88, FBX_TIME_MODE_FRAMES_120, FBX_TIME_MODE_FRAMES_24, FBX_TIME_MODE_FRAMES_30, FBX_TIME_MODE_FRAMES_30_DROP, FBX_TIME_MODE_FRAMES_48, FBX_TIME_MODE_FRAMES_50, FBX_TIME_MODE_FRAMES_59_94, FBX_TIME_MODE_FRAMES_60, FBX_TIME_MODE_FRAMES_72, FBX_TIME_MODE_FRAMES_96, FBX_TIME_MODE_NTSC_DROP_FRAME, FBX_TIME_MODE_NTSC_FULL_FRAME, FBX_TIME_MODE_PAL, FBX_TIME_PROTOCOL_DEFAULT, FBX_TIME_PROTOCOL_FRAME_COUNT, FBX_TIME_PROTOCOL_SMPTE, FBX_TYPE_BLOB, FBX_TYPE_BOOL, FBX_TYPE_CHAR, FBX_TYPE_COUNT, FBX_TYPE_DATE_TIME, FBX_TYPE_DISTANCE, FBX_TYPE_DOUBLE, FBX_TYPE_DOUBLE2, FBX_TYPE_DOUBLE3, FBX_TYPE_DOUBLE4, FBX_TYPE_DOUBLE4x4, FBX_TYPE_ENUM, FBX_TYPE_ENUM_M, FBX_TYPE_FLOAT, FBX_TYPE_HALF_FLOAT, FBX_TYPE_INT, FBX_TYPE_LONG_LONG, FBX_TYPE_REFERENCE, FBX_TYPE_SHORT, FBX_TYPE_STRING, FBX_TYPE_TIME, FBX_TYPE_UNDEFINED, FBX_TYPE_U_CHAR, FBX_TYPE_U_INT, FBX_TYPE_U_LONG_LONG, FBX_TYPE_U_SHORT, FbxPropertyType, FbxType, MappingMode, ReferenceMode, SkeletonType, TimeMode, TimeProtocol, createDefinitionsRecord, createEmptyFile, createFBXRecord, createFBXRecordDoubleArray, createFBXRecordFloatArray, createFBXRecordInt32Array, createFBXRecordInt64Array, createFBXRecordMultipleBytes, createFBXRecordMultipleDouble, createFBXRecordMultipleFloat, createFBXRecordMultipleInt64, createFBXRecordMultipleStrings, createFBXRecordSingle, createFBXRecordSingleBytes, createFBXRecordSingleDouble, createFBXRecordSingleFloat, createFBXRecordSingleInt32, createFBXRecordSingleInt64, createFBXRecordSingleInt8, createFBXRecordSingleString, createHeaderExtensionRecord, createTakesRecord, fbxNameClass, fbxSceneToFBXFile };
+export { FBXAnimCurveKey, FBXAxisSystem, FBXBone, FBXCamera, FBXCluster, FBXExporter, FBXFile, FBXGlobalSettings, FBXImporter, FBXLayer, FBXLayerElementMaterial, FBXManager, FBXMesh, FBXNode, FBXPose, FBXScene, FBXSkeleton, FBXSkin, FBXSurfacePhong, FBXTakeInfo, FBXTexture, FBXTime, FBXTimeSpan, FBXVideo, FBX_BINARY_MAGIC, FBX_DATA_LEN, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DEFORMER_CLUSTER_VERSION, FBX_DEFORMER_SKIN_VERSION, FBX_GEOMETRY_BINORMAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_NORMAL_VERSION, FBX_GEOMETRY_TANGENT_VERSION, FBX_GEOMETRY_UV_VERSION, FBX_GEOMETRY_VERSION, FBX_HEADER_VERSION, FBX_INHERIT_TYPE_CHILD_ROTATION_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_FIRST, FBX_INHERIT_TYPE_PARENT_SCALING_IGNORED, FBX_KTIME, FBX_MAPPING_MODE_ALL_SAME, FBX_MAPPING_MODE_CONTROL_POINT, FBX_MAPPING_MODE_EDGE, FBX_MAPPING_MODE_NONE, FBX_MAPPING_MODE_POLYGON, FBX_MAPPING_MODE_POLYGON_VERTEX, FBX_MATERIAL_VERSION, FBX_MODELS_VERSION, FBX_NODE_ATTRIBUTE_TYPE_BOUNDARY, FBX_NODE_ATTRIBUTE_TYPE_CACHED_EFFECT, FBX_NODE_ATTRIBUTE_TYPE_CAMERA, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_STEREO, FBX_NODE_ATTRIBUTE_TYPE_CAMERA_SWITCHER, FBX_NODE_ATTRIBUTE_TYPE_LIGHT, FBX_NODE_ATTRIBUTE_TYPE_LOD_GROUP, FBX_NODE_ATTRIBUTE_TYPE_MARKER, FBX_NODE_ATTRIBUTE_TYPE_MESH, FBX_NODE_ATTRIBUTE_TYPE_NULL, FBX_NODE_ATTRIBUTE_TYPE_NURBS, FBX_NODE_ATTRIBUTE_TYPE_NURBS_CURVE, FBX_NODE_ATTRIBUTE_TYPE_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_MARKER, FBX_NODE_ATTRIBUTE_TYPE_OPTICAL_REFERENCE, FBX_NODE_ATTRIBUTE_TYPE_PATCH, FBX_NODE_ATTRIBUTE_TYPE_SHAPE, FBX_NODE_ATTRIBUTE_TYPE_SKELETON, FBX_NODE_ATTRIBUTE_TYPE_SUB_DIV, FBX_NODE_ATTRIBUTE_TYPE_TRIM_NURBS_SURFACE, FBX_NODE_ATTRIBUTE_TYPE_UNKNOWN, FBX_POSE_BIND_VERSION, FBX_PROJECTION_TYPE_ORTHOGONAL, FBX_PROJECTION_TYPE_PERSPECTIVE, FBX_PROPERTY_FLAG_ANIMATABLE, FBX_PROPERTY_FLAG_ANIMATED, FBX_PROPERTY_FLAG_HIDDEN, FBX_PROPERTY_FLAG_IMPORTED, FBX_PROPERTY_FLAG_LOCKED_ALL, FBX_PROPERTY_FLAG_LOCKED_MEMBER_0, FBX_PROPERTY_FLAG_LOCKED_MEMBER_1, FBX_PROPERTY_FLAG_LOCKED_MEMBER_2, FBX_PROPERTY_FLAG_LOCKED_MEMBER_3, FBX_PROPERTY_FLAG_MUTED_ALL, FBX_PROPERTY_FLAG_MUTED_MEMBER_0, FBX_PROPERTY_FLAG_MUTED_MEMBER_1, FBX_PROPERTY_FLAG_MUTED_MEMBER_2, FBX_PROPERTY_FLAG_MUTED_MEMBER_3, FBX_PROPERTY_FLAG_NONE, FBX_PROPERTY_FLAG_NOT_SAVABLE, FBX_PROPERTY_FLAG_STATIC, FBX_PROPERTY_FLAG_USER_DEFINED, FBX_PROPERTY_TYPE_BOOL, FBX_PROPERTY_TYPE_COLOR_3, FBX_PROPERTY_TYPE_COMPOUND, FBX_PROPERTY_TYPE_DOUBLE, FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_ENUM, FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_TIME, FBX_RECORD_NAME_CONNECTIONS, FBX_RECORD_NAME_CREATOR, FBX_RECORD_NAME_OBJECTS, FBX_RECORD_NAME_REFERENCES, FBX_RECORD_NAME_TAKES, FBX_REFERENCE_MODE_DIRECT, FBX_REFERENCE_MODE_INDEX, FBX_REFERENCE_MODE_INDEX_TO_DIRECT, FBX_SCENEINFO_VERSION, FBX_SKELETON_TYPE_EFFECTOR, FBX_SKELETON_TYPE_LIMB, FBX_SKELETON_TYPE_LIMB_NODE, FBX_SKELETON_TYPE_ROOT, FBX_SKINNING_TYPE_BLEND, FBX_SKINNING_TYPE_DUAL_QUATERNION, FBX_SKINNING_TYPE_LINEAR, FBX_SKINNING_TYPE_RIGID, FBX_TC_DAY, FBX_TC_HOUR, FBX_TC_LEGACY_MILLISECOND, FBX_TC_LEGACY_SECOND, FBX_TC_MILLISECOND, FBX_TC_MINUTE, FBX_TC_SECOND, FBX_TEMPLATES_VERSION, FBX_TEXTURE_VERSION, FBX_TIME_MODE_CUSTOM, FBX_TIME_MODE_DEFAULT, FBX_TIME_MODE_FILM_FULL_FRAME, FBX_TIME_MODE_FRAMES, FBX_TIME_MODE_FRAMES_100, FBX_TIME_MODE_FRAMES_1000, FBX_TIME_MODE_FRAMES_119_88, FBX_TIME_MODE_FRAMES_120, FBX_TIME_MODE_FRAMES_24, FBX_TIME_MODE_FRAMES_30, FBX_TIME_MODE_FRAMES_30_DROP, FBX_TIME_MODE_FRAMES_48, FBX_TIME_MODE_FRAMES_50, FBX_TIME_MODE_FRAMES_59_94, FBX_TIME_MODE_FRAMES_60, FBX_TIME_MODE_FRAMES_72, FBX_TIME_MODE_FRAMES_96, FBX_TIME_MODE_NTSC_DROP_FRAME, FBX_TIME_MODE_NTSC_FULL_FRAME, FBX_TIME_MODE_PAL, FBX_TIME_PROTOCOL_DEFAULT, FBX_TIME_PROTOCOL_FRAME_COUNT, FBX_TIME_PROTOCOL_SMPTE, FBX_TYPE_BLOB, FBX_TYPE_BOOL, FBX_TYPE_CHAR, FBX_TYPE_COUNT, FBX_TYPE_DATE_TIME, FBX_TYPE_DISTANCE, FBX_TYPE_DOUBLE, FBX_TYPE_DOUBLE2, FBX_TYPE_DOUBLE3, FBX_TYPE_DOUBLE4, FBX_TYPE_DOUBLE4x4, FBX_TYPE_ENUM, FBX_TYPE_ENUM_M, FBX_TYPE_FLOAT, FBX_TYPE_HALF_FLOAT, FBX_TYPE_INT, FBX_TYPE_LONG_LONG, FBX_TYPE_REFERENCE, FBX_TYPE_SHORT, FBX_TYPE_STRING, FBX_TYPE_TIME, FBX_TYPE_UNDEFINED, FBX_TYPE_U_CHAR, FBX_TYPE_U_INT, FBX_TYPE_U_LONG_LONG, FBX_TYPE_U_SHORT, FbxPropertyType, FbxType, MappingMode, ReferenceMode, SkeletonType, TimeMode, TimeProtocol, createDefinitionsRecord, createEmptyFile, createFBXRecord, createFBXRecordDoubleArray, createFBXRecordFloatArray, createFBXRecordInt32Array, createFBXRecordInt64Array, createFBXRecordMultipleBytes, createFBXRecordMultipleDouble, createFBXRecordMultipleFloat, createFBXRecordMultipleInt64, createFBXRecordMultipleStrings, createFBXRecordSingle, createFBXRecordSingleBytes, createFBXRecordSingleDouble, createFBXRecordSingleFloat, createFBXRecordSingleInt32, createFBXRecordSingleInt64, createFBXRecordSingleInt8, createFBXRecordSingleString, createHeaderExtensionRecord, createTakesRecord, fbxNameClass, fbxSceneToFBXFile };
