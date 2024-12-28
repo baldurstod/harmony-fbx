@@ -1,3 +1,5 @@
+export * from './model/export';
+
 export * from './constants';
 export * from './fbxexporter';
 export * from './fbximporter';
