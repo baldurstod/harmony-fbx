@@ -129,11 +129,11 @@ export class FBXProperty {
 		}
 	}
 
-	getAllProperties(includeSelf = true) {
-		return this.#getAllProperties(new Set(), includeSelf);
+	getAllProperties(includeSelf = true): Set<FBXProperty> {
+		return this.#getAllProperties(new Set<FBXProperty>(), includeSelf);
 	}
 
-	#getAllProperties(childs = new Set(), includeSelf = true) {
+	#getAllProperties(childs = new Set<FBXProperty>(), includeSelf = true): Set<FBXProperty> {
 		if (includeSelf) {
 			childs.add(this);
 		}

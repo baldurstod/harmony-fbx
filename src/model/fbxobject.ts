@@ -7,7 +7,7 @@ export class FBXObject {
 	#id = getUniqueId();
 	#name = '';
 	#srcObjects = new Set<FBXObject>();
-	#rootProperty;
+	#rootProperty: FBXProperty;
 	#manager;
 	isFBXObject = true;
 

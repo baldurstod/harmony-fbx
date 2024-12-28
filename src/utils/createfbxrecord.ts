@@ -89,7 +89,7 @@ export function createFBXRecordMultipleStrings(name: string, values: Array<strin
 	return createFBXRecordMultiple(name, FBX_DATA_TYPE_STRING, values);
 }
 
-export function createFBXRecordSingleBytes(name: string, value: Blob) {
+export function createFBXRecordSingleBytes(name: string, value: Blob | undefined) {
 	return createFBXRecordSingle(name, FBX_DATA_TYPE_RAW, value);
 }
 

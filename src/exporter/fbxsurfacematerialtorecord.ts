@@ -1,8 +1,9 @@
-import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString } from '../utils/createfbxrecord.js';
-import { createStringProperty, createInt64Property, createDoubleProperty } from '../utils/createfbxproperty.js';
-import { FBX_MATERIAL_VERSION } from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property, createDoubleProperty } from '../utils/createfbxproperty';
+import { FBX_MATERIAL_VERSION } from '../constants';
+import { FBXSurfaceMaterial } from '../model/fbxsurfacematerial';
 
-export function fbxSurfaceMaterialToRecord(fbxSurfaceMaterial) {
+export function fbxSurfaceMaterialToRecord(fbxSurfaceMaterial: FBXSurfaceMaterial) {
 	return createFBXRecord('Material', {
 		childs: [
 			createFBXRecordSingleInt32('Version', FBX_MATERIAL_VERSION),

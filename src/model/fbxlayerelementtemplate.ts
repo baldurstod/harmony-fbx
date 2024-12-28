@@ -1,11 +1,9 @@
-import { FBXLayerElement } from './fbxlayerelement.js';
+import { FBXLayerElement } from './fbxlayerelement';
 
 export class FBXLayerElementTemplate extends FBXLayerElement {
 	#directArray = [];
 	#indexArray = [];
-	constructor(name) {
-		super(name);
-	}
+	isFBXLayerElementTemplate = true;
 
 	get directArray() {
 		return this.#directArray;
@@ -15,4 +13,3 @@ export class FBXLayerElementTemplate extends FBXLayerElement {
 		return this.#indexArray;
 	}
 }
-FBXLayerElementTemplate.prototype.isFBXLayerElementTemplate = true;

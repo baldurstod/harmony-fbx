@@ -1,8 +1,7 @@
-import { FBXTexture } from './fbxtexture.js';
+import { FBXTexture } from './fbxtexture';
 
 export class FBXFileTexture extends FBXTexture {
-	constructor(name) {
-		super(name);
-	}
+	isFBXFileTexture = true;
+
+	//TODO
 }
-FBXFileTexture.prototype.isFBXFileTexture = true;

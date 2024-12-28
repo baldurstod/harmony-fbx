@@ -1,8 +1,5 @@
-import { FBXLayerElementTemplate } from './fbxlayerelementtemplate.js';
+import { FBXLayerElementTemplate } from './fbxlayerelementtemplate';
 
 export class FBXLayerElementMaterial extends FBXLayerElementTemplate {
-	constructor(name) {
-		super(name);
-	}
+	isFBXLayerElementMaterial = true;
 }
-FBXLayerElementMaterial.prototype.isFBXLayerElementMaterial = true;

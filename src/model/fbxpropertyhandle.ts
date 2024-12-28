@@ -1,5 +1,3 @@
 export class FBXPropertyHandle {
-	constructor() {
-	}
+	isFBXPropertyHandle = true;
 }
-FBXPropertyHandle.prototype.isFBXPropertyHandle = true;

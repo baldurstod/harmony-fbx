@@ -1,7 +1,8 @@
-import { createFBXRecord, createFBXRecordSingleString, createFBXRecordSingleBytes, createFBXRecordMultipleStrings } from './createfbxrecord.js';
-import { createStringProperty, createInt64Property } from './createfbxproperty.js';
+import { createFBXRecord, createFBXRecordSingleString, createFBXRecordSingleBytes, createFBXRecordMultipleStrings } from './createfbxrecord';
+import { createStringProperty, createInt64Property } from './createfbxproperty';
+import { FBXVideo } from '../model/fbxvideo';
 
-export function createVideoRecord(fbxVideo) {
+export function createVideoRecord(fbxVideo: FBXVideo) {
 	return createFBXRecord('Video', {
 		childs: [
 			createFBXRecordSingleString('Type', fbxVideo.type),

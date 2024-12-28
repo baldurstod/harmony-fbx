@@ -1,10 +1,12 @@
-import { FBX_MAPPING_MODE_ALL_SAME } from '../enums/mappingmode.js';
-import { FBX_REFERENCE_MODE_DIRECT } from '../enums/referencemode.js';
+import { FBX_MAPPING_MODE_ALL_SAME, MappingMode } from '../enums/mappingmode';
+import { FBX_REFERENCE_MODE_DIRECT, ReferenceMode } from '../enums/referencemode';
 
 export class FBXLayerElement {
-	#mappingMode = FBX_MAPPING_MODE_ALL_SAME;
-	#referenceMode = FBX_REFERENCE_MODE_DIRECT;
+	#mappingMode: MappingMode = MappingMode.AllSame;
+	#referenceMode: ReferenceMode = ReferenceMode.Direct;
 	#name = '';
+	isFBXLayerElement = true;
+
 	constructor(name = '') {
 		this.name = name;
 	}
@@ -14,15 +16,15 @@ export class FBXLayerElement {
 	}
 
 	get mappingMode() {
-		return mappingMode;
+		return this.#mappingMode;
 	}
 
-	set referenceMode(referenceMode) {
+	set referenceMode(referenceMode: ReferenceMode) {
 		this.#referenceMode = referenceMode;
 	}
 
 	get referenceMode() {
-		return referenceMode;
+		return this.#referenceMode;
 	}
 
 	set name(name) {
@@ -30,7 +32,6 @@ export class FBXLayerElement {
 	}
 
 	get name() {
-		return name;
+		return this.#name;
 	}
 }
-FBXLayerElement.prototype.isFBXLayerElement = true;

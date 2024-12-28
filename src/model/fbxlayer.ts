@@ -1,7 +1,5 @@
 export class FBXLayer {
-	constructor() {
-	}
+	isFBXLayer = true;
 
 	//TODO
 }
-FBXLayer.prototype.isFBXLayer = true;

@@ -1,8 +1,10 @@
-import { FBX_PROPERTY_TYPE_DOUBLE } from '../enums/propertytype.js';
-import { FBXRecord } from '../model/fbxrecord.js';
-import { createPDouble } from '../utils/createprecord.js';
+import { FBX_PROPERTY_TYPE_DOUBLE } from '../enums/propertytype';
+import { FBXObject } from '../model/fbxobject';
+import { FBXProperty } from '../model/fbxproperty';
+import { FBXRecord } from '../model/fbxrecord';
+import { createPDouble } from '../utils/createprecord';
 
-export function createPropertiesRecord(fbxObject) {
+export function createPropertiesRecord(fbxObject: FBXObject) {
 	const fbxRecord = new FBXRecord('Properties70');
 	const objectProperties = fbxObject.getAllProperties();
 
@@ -17,7 +19,7 @@ export function createPropertiesRecord(fbxObject) {
 	return fbxRecord;
 }
 
-export function createPropertyRecord(fbxProperty) {
+export function createPropertyRecord(fbxProperty: FBXProperty) {
 	let fn = TYPE_PROPERTY.get(fbxProperty.type);
 	if (!fn) {
 		throw 'Unsupported property type';

@@ -1,4 +1,5 @@
 export class FBXDataType {
+	isFBXDataType = true;
 	#name;
 	#type;
 	constructor(name, type) {
@@ -6,4 +7,3 @@ export class FBXDataType {
 		this.#type = type;
 	}
 }
-FBXDataType.prototype.isFBXDataType = true;

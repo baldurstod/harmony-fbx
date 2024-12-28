@@ -1,11 +1,8 @@
-import { FBXObject } from './fbxobject.js';
-import { FBX_SUB_DEFORMER_TYPE_UNKNOWN } from '../enums/subdeformertype.js';
+import { FBXObject } from './fbxobject';
+import { FBX_SUB_DEFORMER_TYPE_UNKNOWN } from '../enums/subdeformertype';
 
 export class FBXSubDeformer extends FBXObject {
-	constructor(manager, name) {
-		super(manager, name);
-		this.isFBXSubDeformer = true;
-	}
+	isFBXSubDeformer = true;
 
 	get subDeformerType() {
 		return FBX_SUB_DEFORMER_TYPE_UNKNOWN;

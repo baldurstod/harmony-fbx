@@ -1,8 +1,9 @@
-import {createFBXRecord, createFBXRecordSingleInt32, createFBXRecordDoubleArray, createFBXRecordInt32Array, createFBXRecordSingleString} from '../utils/createfbxrecord.js';
-import {createStringProperty, createInt64Property, createInt32Property} from '../utils/createfbxproperty.js';
-import {FBX_GEOMETRY_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_UV_VERSION} from '../constants.js';
+import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordDoubleArray, createFBXRecordInt32Array, createFBXRecordSingleString } from '../utils/createfbxrecord';
+import { createStringProperty, createInt64Property, createInt32Property } from '../utils/createfbxproperty';
+import { FBX_GEOMETRY_VERSION, FBX_GEOMETRY_MATERIAL_VERSION, FBX_GEOMETRY_LAYER_VERSION, FBX_GEOMETRY_UV_VERSION } from '../constants';
+import { FBXMesh } from '../model/fbxmesh';
 
-export function fbxMeshToRecord(fbxMesh) {
+export function fbxMeshToRecord(fbxMesh: FBXMesh) {
 	return createFBXRecord('Geometry', {
 		childs: [
 			createFBXRecord('Properties70'),
