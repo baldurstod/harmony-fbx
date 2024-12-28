@@ -4,6 +4,9 @@ import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DAT
 import { createStringProperty, createRawProperty } from './utils/createfbxproperty.js';
 
 import { FBXRecord } from './model/fbxrecord.js';
+import { FBXFile } from './model/fbxfile.js';
+import { FBXProperty } from './model/fbxproperty.js';
+import { FBXRecordProperty } from './model/fbxrecordproperty.js';
 
 
 const _TIME_ID = '1970-01-01 10:00:00:000';
@@ -13,7 +16,7 @@ const _FOOT_ID = new Uint8Array([0xfa, 0xbc, 0xab, 0x09, 0xd0, 0xc8, 0xd4, 0x66,
 const FBX_FOOTER2 = '\xf8\x5a\x8c\x6a\xde\xf5\xd9\x7e\xec\xe9\x0c\xe3\x75\x8f\x29\x0b';
 
 export class FBXExporter {
-	exportBinary(fbxFile) {
+	exportBinary(fbxFile: FBXFile) {
 		checkFile(fbxFile);
 		let version = fbxFile.version;
 		let size = getFileSize(fbxFile, version);
@@ -26,7 +29,7 @@ export class FBXExporter {
 	}
 }
 
-function checkFile(fbxFile) {
+function checkFile(fbxFile: FBXFile) {
 	for (let child of fbxFile.childs) {
 		if (child.name == 'CreationTime' || child.name == 'FileId') {
 			fbxFile.childs.delete(child);
@@ -37,7 +40,7 @@ function checkFile(fbxFile) {
 	formatFileIdRecord(fbxFile);
 }
 
-function exportBinaryFile(writer, fbxFile) {
+function exportBinaryFile(writer: BinaryReader, fbxFile: FBXFile) {
 	let version = fbxFile.version;
 	writer.seek(0);
 	writer.setString(FBX_BINARY_MAGIC);
@@ -61,14 +64,14 @@ function exportBinaryFile(writer, fbxFile) {
 	return writer.buffer;
 }
 
-function formatFileIdRecord(fbxFile) {
+function formatFileIdRecord(fbxFile: FBXFile) {
 	let fbxRecord = fbxFile.addChild(new FBXRecord('FileId'));
 	fbxRecord.properties.clear();
 	let fbxProperty = createRawProperty(_FILE_ID);
 	fbxRecord.addProperty(fbxProperty);
 }
 
-function formatCreationTimeRecord(fbxFile) {
+function formatCreationTimeRecord(fbxFile: FBXFile) {
 	let fbxRecord = fbxFile.addChild(new FBXRecord('CreationTime'));
 	fbxRecord.properties.clear();
 	let dateCreated = fbxFile.dateCreated;
@@ -80,7 +83,7 @@ function formatCreationTimeRecord(fbxFile) {
 	fbxRecord.addProperty(fbxProperty);
 }
 
-function align16(offset) {
+function align16(offset: number) {
 	let pad = ((offset + 15) & ~15) - offset;
 	if (pad == 0) {
 		pad = 16;
@@ -88,7 +91,7 @@ function align16(offset) {
 	return pad;
 }
 
-function exportBinaryRecord(writer, fbxRecord, version) {
+function exportBinaryRecord(writer: BinaryReader, fbxRecord: FBXRecord, version: number) {
 	let startOffset = writer.tell();
 	let recordLen = getRecordSize(fbxRecord, version);
 	//console.log(startOffset);
@@ -111,13 +114,13 @@ function exportBinaryRecord(writer, fbxRecord, version) {
 	writer.skip((version >= 7500) ? 25 : 13);//Null record
 }
 
-function exportProperties(writer, fbxRecord) {
+function exportProperties(writer: BinaryReader, fbxRecord: FBXRecord) {
 	for (let property of fbxRecord.properties) {
-		exportProperty(writer, property);
+		exportRecordProperty(writer, property);
 	}
 }
 
-function exportProperty(writer, fbxProperty) {
+function exportRecordProperty(writer: BinaryReader, fbxProperty: FBXRecordProperty) {
 	//console.log(fbxProperty);
 
 	writer.setUint8(fbxProperty.type);
@@ -153,17 +156,17 @@ function exportProperty(writer, fbxProperty) {
 		case FBX_DATA_TYPE_ARRAY_FLOAT:
 		case FBX_DATA_TYPE_ARRAY_INT_32:
 		case FBX_DATA_TYPE_ARRAY_INT_64:
-			exportPropertyArray(writer, fbxProperty);
+			exportRecordPropertyArray(writer, fbxProperty);
 			break;
 		default:
 			throw 'Unknown property type ' + fbxProperty.type;
 	}
 }
 
-function exportPropertyArray(writer, fbxProperty) {
+function exportRecordPropertyArray(writer: BinaryReader, fbxProperty: FBXRecordProperty) {
 	writer.setUint32(fbxProperty.value.length);
 	writer.setUint32(0);//Encoding
-	writer.setUint32(FBX_DATA_LEN[fbxProperty.type] * fbxProperty.value.length);
+	writer.setUint32((FBX_DATA_LEN.get(fbxProperty.type) as number) * fbxProperty.value.length);
 
 	let functionName;
 	switch (fbxProperty.type) {
@@ -182,7 +185,7 @@ function exportPropertyArray(writer, fbxProperty) {
 		case FBX_DATA_TYPE_ARRAY_INT_64:
 			functionName = 'setBigInt64';
 			for (let value of fbxProperty.value) {
-				writer[functionName](BigInt(value));
+				writer.setBigInt64(value);
 			}
 			return;
 			break;
@@ -191,11 +194,11 @@ function exportPropertyArray(writer, fbxProperty) {
 	}
 
 	for (let value of fbxProperty.value) {
-		writer[functionName](value);
+		(writer as any)[functionName](value);
 	}
 }
 
-function getFileSize(fbxFile, version) {
+function getFileSize(fbxFile: FBXFile, version: number) {
 	let size = 27;//header
 	for (let child of fbxFile.childs) {
 		size += getRecordSize(child, version);
@@ -214,7 +217,7 @@ function getFileSize(fbxFile, version) {
 	return size;
 }
 
-function getRecordSize(fbxRecord, version) {
+function getRecordSize(fbxRecord: FBXRecord, version: number) {
 	let size;
 	if (version >= 7500) {
 		size = 8 + 8 + 8 + 1;
@@ -235,7 +238,7 @@ function getRecordSize(fbxRecord, version) {
 	return size;
 }
 
-function getRecordPropertiesSize(fbxRecord) {
+function getRecordPropertiesSize(fbxRecord: FBXRecord) {
 	let size = 0;
 	for (let property of fbxRecord.properties) {
 		switch (property.type) {
@@ -246,7 +249,7 @@ function getRecordPropertiesSize(fbxRecord) {
 			case FBX_DATA_TYPE_INT_64:
 			case FBX_DATA_TYPE_INT_16:
 				++size//Typecode
-				size += FBX_DATA_LEN[property.type];
+				size += FBX_DATA_LEN.get(property.type) as number;
 				break;
 			case FBX_DATA_TYPE_RAW:
 			case FBX_DATA_TYPE_STRING:
@@ -260,7 +263,7 @@ function getRecordPropertiesSize(fbxRecord) {
 			case FBX_DATA_TYPE_ARRAY_INT_32:
 			case FBX_DATA_TYPE_ARRAY_INT_64:
 				size += 13;//Typecode + array header
-				size += FBX_DATA_LEN[property.type] * property.value.length;
+				size += FBX_DATA_LEN.get(property.type) as number * property.value.length;
 				break;
 			default:
 				throw 'Unknown property type ' + property.type;
@@ -276,13 +279,13 @@ const sourceId = new Uint8Array([0x58, 0xAB, 0xA9, 0xF0, 0x6C, 0xA2, 0xD8, 0x3F,
 const key = new Uint8Array([0xE2, 0x4F, 0x7B, 0x5F, 0xCD, 0xE4, 0xC8, 0x6D, 0xDB, 0xD8, 0xFB, 0xD7, 0x40, 0x58, 0xC6, 0x78]);
 //const extension = new Uint8Array([0xF8, 0x5A, 0x8C, 0x6A, 0xDE, 0xF5, 0xD9, 0x7E, 0xEC, 0xE9, 0x0C, 0xE3, 0x75, 0x8F, 0x29, 0x0B]);
 
-function padNumber(number, targetLength) {//TODO: move
-	return number.toString().padStart(targetLength, 0);
+function padNumber(number: number, targetLength: number) {//TODO: move
+	return number.toString().padStart(targetLength, '0');
 }
 
 const footerCodeSize = 16;
 
-function encrypt(a, b) {
+function encrypt(a: Uint8Array, b: Uint8Array) {
 	let c = 64;
 	for (let i = 0; i < footerCodeSize; i++) {
 		a[i] = (a[i] ^ (c ^ b[i]));
@@ -290,11 +293,11 @@ function encrypt(a, b) {
 	}
 }
 
-function generateFooterCode(date) {
+function generateFooterCode(date: Date) {
 	return _FOOT_ID;
 	let output = new Uint8Array(sourceId);
 
-	let mangledTime = `${padNumber(date.getSeconds(), 2)}${padNumber(date.getMonth() + 1, 2)}${padNumber(date.getHours(), 2)}${padNumber(date.getDate(), 2)}${padNumber((date.getMilliseconds() / 10).toFixed(0), 2)}${padNumber(date.getFullYear(), 4)}${padNumber(date.getMinutes(), 2)}`;
+	let mangledTime = `${padNumber(date.getSeconds(), 2)}${padNumber(date.getMonth() + 1, 2)}${padNumber(date.getHours(), 2)}${padNumber(date.getDate(), 2)}${padNumber(Number((date.getMilliseconds() / 10).toFixed(0)), 2)}${padNumber(date.getFullYear(), 4)}${padNumber(date.getMinutes(), 2)}`;
 
 	//05/03/2018 09:48:57.083
 	//5311221301202252

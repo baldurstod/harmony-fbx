@@ -1,7 +1,9 @@
 export class FBXAxisSystem {
-	#upAxis;
-	#frontAxis;
-	constructor(upAxis, frontAxis) {
+	isFBXAxisSystem = true;
+	#upAxis: number;
+	#frontAxis: number;
+
+	constructor(upAxis: number, frontAxis: number) {
 		this.#upAxis = upAxis;
 		this.#frontAxis = frontAxis;
 	}
@@ -26,4 +28,3 @@ export class FBXAxisSystem {
 		return this.#frontAxis;
 	}
 }
-FBXAxisSystem.prototype.isFBXAxisSystem = true;

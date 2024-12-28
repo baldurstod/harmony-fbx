@@ -1,9 +1,10 @@
 import { inflate } from 'pako';
 import { BinaryReader } from 'harmony-binary-reader';
-import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_LEN, FBX_BINARY_MAGIC, FbxTypes } from './constants.js';
+import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_LEN, FBX_BINARY_MAGIC, FbxType } from './constants';
 import { FBXFile } from './model/fbxfile';
 import { FBXProperty } from './model/fbxproperty';
 import { FBXRecord } from './model/fbxrecord';
+import { FBXRecordProperty } from './model/fbxrecordproperty';
 
 export class FBXImporter extends EventTarget {
 	//#reader;
@@ -11,7 +12,7 @@ export class FBXImporter extends EventTarget {
 		super();
 	}
 
-	parse(buffer) {
+	parse(buffer: Uint8Array) {
 		let reader = new BinaryReader(buffer);
 		if (FBXImporter.#isBinary(reader)) {
 			return FBXImporter.#parseBinary(reader);
@@ -20,7 +21,7 @@ export class FBXImporter extends EventTarget {
 		}
 	}
 
-	static #isBinary(reader) {
+	static #isBinary(reader: BinaryReader) {
 		if (reader.getString(FBX_BINARY_MAGIC.length, 0) == FBX_BINARY_MAGIC) {
 			return true;
 		} else {
@@ -28,7 +29,7 @@ export class FBXImporter extends EventTarget {
 		}
 	}
 
-	static #parseBinary(reader) {
+	static #parseBinary(reader: BinaryReader) {
 		let file = new FBXFile();
 		file.version = reader.getUint32(23);
 		reader.seek(27);
@@ -45,12 +46,12 @@ export class FBXImporter extends EventTarget {
 		return file;
 	}
 
-	static #parseText(reader) {
+	static #parseText(reader: BinaryReader) {
 		throw 'Code parseText';
 	}
 }
 
-function parseBinaryRecord(reader, version7500, tabLevel) {
+function parseBinaryRecord(reader: BinaryReader, version7500: boolean, tabLevel: number) {
 	let startOffset = reader.tell();
 
 	let endOffset = version7500 ? Number(reader.getBigUint64()) : reader.getUint32();
@@ -99,7 +100,7 @@ function parseBinaryRecord(reader, version7500, tabLevel) {
 	return record;
 }
 
-function parseProperty(reader, tabLevel) {
+function parseProperty(reader: BinaryReader, tabLevel: number) {
 	let startOffset = reader.tell();
 	//console.log('>>>>>>>>' + startOffset);
 	let typeCode = reader.getUint8();
@@ -151,16 +152,20 @@ function parseProperty(reader, tabLevel) {
 	//console.log(tab + property);
 
 	throw 'fix property constructor below';
-	return new FBXProperty(null, typeCode, property);
+	return new FBXRecordProperty(null, typeCode, property);
 }
 
-function parseArray(reader, arrayType: FbxTypes) {
+function parseArray(reader: BinaryReader, arrayType: FbxType) {
 	let arrayLen = reader.getUint32();
 	let encoding = reader.getUint32();
 	let compressedLength = reader.getUint32();
 	let decompressedLength = compressedLength;
 
-	let dataLen = FBX_DATA_LEN[arrayType];
+	let dataLen = FBX_DATA_LEN.get(arrayType);
+
+	if (dataLen === undefined) {
+		throw 'wrong array type';
+	}
 	//console.log(reader.tell(), arrayLen, encoding, compressedLength, arrayType);
 
 	let dataReader = reader;
