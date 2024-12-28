@@ -6,7 +6,7 @@ import { FBXProperty } from './fbxproperty';
 export class FBXObject {
 	#id = getUniqueId();
 	#name = '';
-	#srcObjects = new Set();
+	#srcObjects = new Set<FBXObject>();
 	#rootProperty;
 	#manager;
 	isFBXObject = true;
@@ -62,7 +62,7 @@ export class FBXObject {
 		return this.#rootProperty.getAllProperties(false);
 	}
 
-	findProperty(propertyName: string) {
+	findProperty(propertyName: string): FBXProperty | null {
 		return this.#rootProperty.findProperty(propertyName);
 	}
 }

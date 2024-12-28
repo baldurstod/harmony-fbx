@@ -1,21 +1,15 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXNodeAttribute } from './fbxnodeattribute.js';
-import { FBX_NODE_ATTRIBUTE_TYPE_SKELETON } from '../enums/nodeattributetype.js';
+import { FBXManager } from './fbxmanager';
+import { FBXNodeAttribute } from './fbxnodeattribute';
+import { FBX_NODE_ATTRIBUTE_TYPE_SKELETON } from '../enums/nodeattributetype';
+import { SkeletonType } from '../enums/skeletontype';
 
 export class FBXSkeleton extends FBXNodeAttribute {
-	#skeletonType;
-	constructor(manager, name, skeletonType) {
+	skeletonType: SkeletonType;
+	isFBXSkeleton = true;
+
+	constructor(manager: FBXManager, name: string, skeletonType: SkeletonType) {
 		super(manager, name);
-		this.isFBXSkeleton = true;
 		this.skeletonType = skeletonType;
-	}
-
-	set skeletonType(skeletonType) {
-		this.#skeletonType = skeletonType;
-	}
-
-	get skeletonType() {
-		return this.#skeletonType;
 	}
 
 	getAttributeType() {

@@ -15,9 +15,10 @@ export class FBXCamera extends FBXNodeAttribute {
 	#farPlane;
 	#projectionType;
 	#orthoZoom;
-	constructor(manager, name) {
+	isFBXCamera = true;
+
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXCamera = true;
 
 		this.#position = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'Position', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);
 		this.#upVector = this.createProperty(FBX_PROPERTY_TYPE_DOUBLE_3, 'UpVector', [0, 0, 0], FBX_PROPERTY_FLAG_STATIC);

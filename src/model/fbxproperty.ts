@@ -158,7 +158,7 @@ export class FBXProperty {
 		return null;
 	}
 
-	findProperty(propertyName: string) {
+	findProperty(propertyName: string): FBXProperty | null {
 		if (this.#name === propertyName) {
 			return this;
 		}
@@ -171,6 +171,7 @@ export class FBXProperty {
 				}
 			}
 		}
+		return null;
 	}
 
 	toJSON() {

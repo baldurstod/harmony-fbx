@@ -1,14 +1,15 @@
-import { FBXManager } from './fbxmanager.js';
-import { FBXObject } from './fbxobject.js';
-import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags.js';
-import { FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_BOOL } from '../enums/propertytype.js';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
+import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
+import { FBX_PROPERTY_TYPE_STRING, FBX_PROPERTY_TYPE_BOOL } from '../enums/propertytype';
 
 export class FBXSurfaceMaterial extends FBXObject {
 	#shadingModel;
 	#multiLayer;
-	constructor(manager, name) {
+	isFBXSurfaceMaterial = true;
+
+	constructor(manager: FBXManager, name: string) {
 		super(manager, name);
-		this.isFBXSurfaceMaterial = true;
 
 		this.#shadingModel = this.createProperty(FBX_PROPERTY_TYPE_STRING, 'ShadingModel', 'Unknown', FBX_PROPERTY_FLAG_STATIC);
 		this.#multiLayer = this.createProperty(FBX_PROPERTY_TYPE_BOOL, 'MultiLayer', false, FBX_PROPERTY_FLAG_STATIC);
