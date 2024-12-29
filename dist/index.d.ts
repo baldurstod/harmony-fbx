@@ -378,6 +378,16 @@ export declare class FBXAnimCurveKey {
     get time(): FBXTime;
 }
 
+export declare class FBXAnimLayer extends FBXCollection {
+    isFBXAnimLayer: boolean;
+}
+
+export declare class FBXAnimStack extends FBXCollection {
+    #private;
+    isFBXAnimStack: boolean;
+    constructor(manager: FBXManager, name: string);
+}
+
 export declare class FBXAxisSystem {
     #private;
     isFBXAxisSystem: boolean;

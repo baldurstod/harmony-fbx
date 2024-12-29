@@ -1,3 +1,5 @@
+export * from './fbxanimlayer';
+export * from './fbxanimstack';
 export * from './fbxcamera';
 export * from './fbxcluster';
 export * from './fbxglobalsettings';

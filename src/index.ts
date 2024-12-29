@@ -23,8 +23,6 @@ export * from './enums/timeprotocol';
 import {} from './model/fbxanimcurve';
 export * from './model/fbxanimcurvekey';
 import {} from './model/fbxanimcurvenode';
-import {} from './model/fbxanimlayer';
-import {} from './model/fbxanimstack';
 export * from './model/fbxaxissystem';
 export * from './model/fbxbone';
 import {} from './model/fbxcamera';
