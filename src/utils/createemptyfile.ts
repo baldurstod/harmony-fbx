@@ -1,9 +1,10 @@
-import { createStringProperty, createInt64Property } from './createfbxproperty';
-import { createFBXRecord, createFBXRecordSingleInt32, createFBXRecordSingleString, fbxNameClass, createFBXRecordMultipleStrings, createFBXRecordSingleInt64 } from './createfbxrecord';
-import { createPInteger, createPDouble, createPColorRGB, createPEnum, createPString, createPTime, createPObject } from './createprecord';
-import { FBX_HEADER_VERSION, FBX_SCENEINFO_VERSION, FBX_KTIME, FBX_TEMPLATES_VERSION } from '../constants';
+import { FBX_HEADER_VERSION, FBX_KTIME, FBX_SCENEINFO_VERSION, FBX_TEMPLATES_VERSION } from '../constants';
 import { FBX_RECORD_NAME_TAKES } from '../consts/recordsname';
 import { FBXFile } from '../model/fbxfile';
+import { FBXRecord } from '../model/fbxrecord';
+import { createInt64Property, createStringProperty } from './createfbxproperty';
+import { createFBXRecord, createFBXRecordMultipleStrings, createFBXRecordSingleInt32, createFBXRecordSingleInt64, createFBXRecordSingleString, fbxNameClass } from './createfbxrecord';
+import { createPColorRGB, createPDouble, createPEnum, createPInteger, createPObject, createPString, createPTime } from './createprecord';
 
 
 export function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
@@ -23,7 +24,7 @@ export function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fb
 	return fbxFile;
 }
 
-export function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string) {
+export function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string): FBXRecord {
 	let date = new Date();
 	let fbxHeaderExtension = createFBXRecord('FBXHeaderExtension', {
 		childs: [
