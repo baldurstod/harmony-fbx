@@ -1,4 +1,4 @@
-import { FBX_PROPERTY_TYPE_DOUBLE } from '../enums/propertytype';
+import { FBX_PROPERTY_TYPE_DOUBLE, FbxPropertyType } from '../enums/propertytype';
 import { FBXObject } from '../model/fbxobject';
 import { FBXProperty } from '../model/fbxproperty';
 import { FBXRecord } from '../model/fbxrecord';
@@ -28,5 +28,5 @@ export function createPropertyRecord(fbxProperty: FBXProperty) {
 	return fn(fbxProperty.hierarchicalName, fbxProperty.value);
 }
 
-const TYPE_PROPERTY = new Map();
+const TYPE_PROPERTY = new Map<FbxPropertyType, (arg1: string, arg2: any) => FBXRecord>();
 TYPE_PROPERTY.set(FBX_PROPERTY_TYPE_DOUBLE, createPDouble);

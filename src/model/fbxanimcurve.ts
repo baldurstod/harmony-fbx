@@ -3,7 +3,7 @@ import { FBXManager } from './fbxmanager';
 import { FBXObject } from './fbxobject';
 
 export class FBXAnimCurve extends FBXObject {
-	#keys = new Map();
+	#keys = new Map<bigint, FBXAnimCurveKey>();
 	isFBXAnimCurve = true;
 
 	addKey(animCurveKey: FBXAnimCurveKey) {
