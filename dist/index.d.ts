@@ -16,7 +16,7 @@ export declare function createFBXRecordInt32Array(name: string, value: Array<num
 
 export declare function createFBXRecordInt64Array(name: string, value: Array<bigint>): FBXRecord;
 
-export declare function createFBXRecordMultipleBytes(name: string, value: Array<Blob>): FBXRecord;
+export declare function createFBXRecordMultipleBytes(name: string, value: Array<Uint8Array<ArrayBuffer>>): FBXRecord;
 
 export declare function createFBXRecordMultipleDouble(name: string, value: Array<number>): FBXRecord;
 
@@ -28,7 +28,7 @@ export declare function createFBXRecordMultipleStrings(name: string, values: Arr
 
 export declare function createFBXRecordSingle(name: string, type: FbxType, value: any): FBXRecord;
 
-export declare function createFBXRecordSingleBytes(name: string, value: Blob | undefined): FBXRecord;
+export declare function createFBXRecordSingleBytes(name: string, value: Uint8Array<ArrayBuffer> | undefined): FBXRecord;
 
 export declare function createFBXRecordSingleDouble(name: string, value: number): FBXRecord;
 
@@ -892,8 +892,8 @@ export declare enum FbxType {
 export declare class FBXVideo extends FBXObject {
     #private;
     isFBXVideo: boolean;
-    set content(content: Blob | undefined);
-    get content(): Blob | undefined;
+    set content(content: Uint8Array<ArrayBuffer> | undefined);
+    get content(): Uint8Array<ArrayBuffer> | undefined;
     set type(type: string);
     get type(): string;
 }

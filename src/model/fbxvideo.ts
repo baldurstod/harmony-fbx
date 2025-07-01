@@ -2,7 +2,7 @@ import { FBXManager } from './fbxmanager';
 import { FBXObject } from './fbxobject';
 
 export class FBXVideo extends FBXObject {
-	#content?: Blob;
+	#content?: Uint8Array<ArrayBuffer>;
 	#type = 'Clip';
 	isFBXVideo = true;
 
