@@ -7,10 +7,13 @@ if (!BigInt.prototype.toJSON) {
 
 export const FBX_PROPERTY_HIERARCHICAL_SEPARATOR = '|';
 
+export type FBXCompoundPropertyValue = Map<string, FBXProperty>;
+export type FBXPropertyValue = FBXCompoundPropertyValue | any/*TODO: improve*/;
+
 export class FBXProperty {
 	#type: FbxPropertyType;
 	#name: string;
-	#value: any;
+	#value: FBXPropertyValue;
 	#srcObjects = new Set<FBXObject>();
 	#flags = 0;
 	#parent: FBXObject | FBXProperty | null = null;
@@ -116,10 +119,11 @@ export class FBXProperty {
 		return this.#srcObjects;
 	}
 
-	createProperty(type: FbxPropertyType, name: string, value: any, flags: number) {
+	createProperty(type: FbxPropertyType, name: string, value: any, flags: number): FBXProperty {
 		if (this.#type === FbxPropertyType.Compound) {
-			if (this.#value.has(name)) {
-				return false;
+			const existingProperty = (this.#value as FBXCompoundPropertyValue).get(name);
+			if (existingProperty) {
+				return existingProperty;
 			}
 			const newProperty = new FBXProperty(this, type, name, value, flags);
 			this.#value.set(name, newProperty);

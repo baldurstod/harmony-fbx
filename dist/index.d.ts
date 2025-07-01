@@ -1,8 +1,6 @@
-import { FBXProperty as FBXProperty_2 } from './fbxproperty';
-import { FBXRecord as FBXRecord_2 } from '../model/fbxrecord';
 import { mat4 } from 'gl-matrix';
 
-export declare function createDefinitionsRecord(): FBXRecord_2;
+export declare function createDefinitionsRecord(): FBXRecord;
 
 export declare function createEmptyFile(creator?: string, appVendor?: string, appName?: string, appVersion?: string): FBXFile;
 
@@ -44,9 +42,9 @@ export declare function createFBXRecordSingleInt8(name: string, value: number): 
 
 export declare function createFBXRecordSingleString(name: string, value: string): FBXRecord;
 
-export declare function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string): FBXRecord_2;
+export declare function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string): FBXRecord;
 
-export declare function createTakesRecord(): FBXRecord_2;
+export declare function createTakesRecord(): FBXRecord;
 
 export declare const FBX_BINARY_MAGIC = "Kaydara FBX Binary  \0";
 
@@ -386,7 +384,7 @@ export declare class FBXAnimCurveNode extends FBXObject {
     constructor(manager: FBXManager, name: string);
     isAnimated(recurse?: boolean): void;
     createTypedCurveNode(): void;
-    addChannel(type: FbxPropertyType, name: string, value: any, flags: number): false | FBXProperty_2;
+    addChannel(type: FbxPropertyType, name: string, value: any, flags: number): FBXProperty;
 }
 
 export declare class FBXAnimLayer extends FBXCollection {
@@ -427,22 +425,22 @@ export declare class FBXCamera extends FBXNodeAttribute {
     #private;
     isFBXCamera: boolean;
     constructor(manager: FBXManager, name: string);
-    set position(position: FBXProperty_2);
-    get position(): FBXProperty_2;
-    set upVector(upVector: FBXProperty_2);
-    get upVector(): FBXProperty_2;
-    set interestPosition(interestPosition: FBXProperty_2);
-    get interestPosition(): FBXProperty_2;
-    set roll(roll: FBXProperty_2);
-    get roll(): FBXProperty_2;
-    set nearPlane(nearPlane: FBXProperty_2);
-    get nearPlane(): FBXProperty_2;
-    set farPlane(farPlane: FBXProperty_2);
-    get farPlane(): FBXProperty_2;
-    set projectionType(projectionType: FBXProperty_2);
-    get projectionType(): FBXProperty_2;
-    set orthoZoom(orthoZoom: FBXProperty_2);
-    get orthoZoom(): FBXProperty_2;
+    set position(position: FBXProperty);
+    get position(): FBXProperty;
+    set upVector(upVector: FBXProperty);
+    get upVector(): FBXProperty;
+    set interestPosition(interestPosition: FBXProperty);
+    get interestPosition(): FBXProperty;
+    set roll(roll: FBXProperty);
+    get roll(): FBXProperty;
+    set nearPlane(nearPlane: FBXProperty);
+    get nearPlane(): FBXProperty;
+    set farPlane(farPlane: FBXProperty);
+    get farPlane(): FBXProperty;
+    set projectionType(projectionType: FBXProperty);
+    get projectionType(): FBXProperty;
+    set orthoZoom(orthoZoom: FBXProperty);
+    get orthoZoom(): FBXProperty;
     getAttributeType(): number;
 }
 
@@ -623,12 +621,12 @@ export declare class FBXNode extends FBXObject {
     get inheritType(): number;
     set show(show: any);
     get show(): any;
-    set localTranslation(localTranslation: FBXProperty_2);
-    get localTranslation(): FBXProperty_2;
-    set localRotation(localRotation: FBXProperty_2);
-    get localRotation(): FBXProperty_2;
-    set localScaling(localScaling: FBXProperty_2);
-    get localScaling(): FBXProperty_2;
+    set localTranslation(localTranslation: FBXProperty);
+    get localTranslation(): FBXProperty;
+    set localRotation(localRotation: FBXProperty);
+    get localRotation(): FBXProperty;
+    set localScaling(localScaling: FBXProperty);
+    get localScaling(): FBXProperty;
     addMaterial(surfaceMaterial: FBXSurfaceMaterial): void;
     get materials(): FBXSurfaceMaterial[];
     toJSON(): {};
@@ -696,7 +694,7 @@ declare class FBXProperty {
     isRootProperty(): boolean;
     connectSrcObject(object: FBXObject): void;
     get srcObjects(): Set<FBXObject>;
-    createProperty(type: FbxPropertyType, name: string, value: any, flags: number): false | FBXProperty;
+    createProperty(type: FbxPropertyType, name: string, value: any, flags: number): FBXProperty;
     getAllProperties(includeSelf?: boolean): Set<FBXProperty>;
     getParentObject(): FBXObject | null;
     findProperty(propertyName: string): FBXProperty | null;
@@ -805,8 +803,8 @@ export declare class FBXSurfaceLambert extends FBXSurfaceMaterial {
     #private;
     isFBXSurfaceLambert: boolean;
     constructor(manager: FBXManager, name: string);
-    set diffuse(diffuse: FBXProperty_2);
-    get diffuse(): FBXProperty_2;
+    set diffuse(diffuse: FBXProperty);
+    get diffuse(): FBXProperty;
 }
 
 export declare class FBXSurfaceMaterial extends FBXObject {

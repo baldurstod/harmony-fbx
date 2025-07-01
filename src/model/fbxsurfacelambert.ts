@@ -1,10 +1,11 @@
-import { FBXManager } from './fbxmanager';
-import { FBXSurfaceMaterial } from './fbxsurfacematerial';
 import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
 import { FBX_PROPERTY_TYPE_COLOR_3 } from '../enums/propertytype';
+import { FBXManager } from './fbxmanager';
+import { FBXProperty } from './fbxproperty';
+import { FBXSurfaceMaterial } from './fbxsurfacematerial';
 
 export class FBXSurfaceLambert extends FBXSurfaceMaterial {
-	#diffuse;
+	#diffuse: FBXProperty;
 	isFBXSurfaceLambert = true;
 
 	constructor(manager: FBXManager, name: string) {

@@ -1,9 +1,10 @@
-import { FBXManager } from './fbxmanager';
-import { FBXObject } from './fbxobject';
 import { FBX_INHERIT_TYPE_PARENT_SCALING_FIRST } from '../enums/inherittype';
 import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
-import { FBX_PROPERTY_TYPE_DOUBLE_3, FBX_PROPERTY_TYPE_BOOL } from '../enums/propertytype';
+import { FBX_PROPERTY_TYPE_BOOL, FBX_PROPERTY_TYPE_DOUBLE_3 } from '../enums/propertytype';
+import { FBXManager } from './fbxmanager';
 import { FBXNodeAttribute } from './fbxnodeattribute';
+import { FBXObject } from './fbxobject';
+import { FBXProperty } from './fbxproperty';
 import { FBXSurfaceMaterial } from './fbxsurfacematerial';
 
 export class FBXNode extends FBXObject {
@@ -13,9 +14,9 @@ export class FBXNode extends FBXObject {
 	#nodeAttribute?: FBXNodeAttribute;
 	#inheritType = FBX_INHERIT_TYPE_PARENT_SCALING_FIRST;
 	#show;
-	#localTranslation;
-	#localRotation;
-	#localScaling;
+	#localTranslation: FBXProperty;
+	#localRotation: FBXProperty;
+	#localScaling: FBXProperty;
 	isFBXNode = true;
 
 	constructor(manager: FBXManager, name: string) {
@@ -41,11 +42,11 @@ export class FBXNode extends FBXObject {
 		}
 	}
 
-	addChild(child: FBXNode) {
+	addChild(child: FBXNode): void {
 		child.parent = this;
 	}
 
-	removeChild(child: FBXNode) {
+	removeChild(child: FBXNode): void {
 		child.parent = null;
 	}
 
@@ -57,7 +58,7 @@ export class FBXNode extends FBXObject {
 		return this.#parent;
 	}
 
-	#checkParent(parent: FBXNode | null) {
+	#checkParent(parent: FBXNode | null): boolean {
 		if (parent === null) {
 			return true;
 		}
@@ -127,7 +128,7 @@ export class FBXNode extends FBXObject {
 		return this.#localScaling;
 	}
 
-	addMaterial(surfaceMaterial: FBXSurfaceMaterial) {
+	addMaterial(surfaceMaterial: FBXSurfaceMaterial): void {
 		this.#materials.push(surfaceMaterial);
 	}
 

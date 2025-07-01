@@ -2,41 +2,24 @@ import { mat4 } from 'gl-matrix';
 import { BinaryReader } from 'harmony-binary-reader';
 import { inflate } from 'pako';
 
-class FBXManager {
-    #objects = new Set();
-    #documents = new Set();
-    isFBXManager = true;
-    static #registry = new Map();
-    destroy() {
-        this.#objects.clear();
-        this.#documents.clear();
-    }
-    static registerClass(className, classConstructor) {
-        FBXManager.#registry.set(className, classConstructor);
-    }
-    createObject(className, objectName, ...args) {
-        const classConstructor = FBXManager.#registry.get(className);
-        if (!classConstructor) {
-            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
-        }
-        const createdObject = new classConstructor(this, objectName, args);
-        if (createdObject) {
-            if (createdObject.isFBXDocument) {
-                this.#documents.add(createdObject);
-            }
-            else {
-                this.#objects.add(createdObject);
-            }
-        }
-        return createdObject;
-    }
-}
-
-// I'm not sure there is reserved ids, let's start big
-let uniqueId = 1000000n;
-function getUniqueId() {
-    return ++uniqueId;
-}
+const FBX_PROPERTY_FLAG_NONE = 0;
+const FBX_PROPERTY_FLAG_STATIC = 1 << 0;
+const FBX_PROPERTY_FLAG_ANIMATABLE = 1 << 1;
+const FBX_PROPERTY_FLAG_ANIMATED = 1 << 2;
+const FBX_PROPERTY_FLAG_IMPORTED = 1 << 3;
+const FBX_PROPERTY_FLAG_USER_DEFINED = 1 << 4;
+const FBX_PROPERTY_FLAG_HIDDEN = 1 << 5;
+const FBX_PROPERTY_FLAG_NOT_SAVABLE = 1 << 6;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 = 1 << 7;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 = 1 << 8;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 = 1 << 9;
+const FBX_PROPERTY_FLAG_LOCKED_MEMBER_3 = 1 << 10;
+const FBX_PROPERTY_FLAG_LOCKED_ALL = FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_3;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_0 = 1 << 11;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_1 = 1 << 12;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_2 = 1 << 13;
+const FBX_PROPERTY_FLAG_MUTED_MEMBER_3 = 1 << 14;
+const FBX_PROPERTY_FLAG_MUTED_ALL = FBX_PROPERTY_FLAG_MUTED_MEMBER_0 | FBX_PROPERTY_FLAG_MUTED_MEMBER_1 | FBX_PROPERTY_FLAG_MUTED_MEMBER_2 | FBX_PROPERTY_FLAG_MUTED_MEMBER_3;
 
 var FbxPropertyType;
 (function (FbxPropertyType) {
@@ -83,6 +66,42 @@ const FBX_TYPE_BLOB = 21;
 const FBX_TYPE_DISTANCE = 22;
 const FBX_TYPE_DATE_TIME = 23;
 const FBX_TYPE_COUNT = 24;
+
+class FBXManager {
+    #objects = new Set();
+    #documents = new Set();
+    isFBXManager = true;
+    static #registry = new Map();
+    destroy() {
+        this.#objects.clear();
+        this.#documents.clear();
+    }
+    static registerClass(className, classConstructor) {
+        FBXManager.#registry.set(className, classConstructor);
+    }
+    createObject(className, objectName, ...args) {
+        const classConstructor = FBXManager.#registry.get(className);
+        if (!classConstructor) {
+            throw 'Unknown constructor in FBXManager.createObject(): ' + className;
+        }
+        const createdObject = new classConstructor(this, objectName, args);
+        if (createdObject) {
+            if (createdObject.isFBXDocument) {
+                this.#documents.add(createdObject);
+            }
+            else {
+                this.#objects.add(createdObject);
+            }
+        }
+        return createdObject;
+    }
+}
+
+// I'm not sure there is reserved ids, let's start big
+let uniqueId = 1000000n;
+function getUniqueId() {
+    return ++uniqueId;
+}
 
 if (!BigInt.prototype.toJSON) {
     BigInt.prototype.toJSON = function () { return this.toString(); };
@@ -188,8 +207,9 @@ class FBXProperty {
     }
     createProperty(type, name, value, flags) {
         if (this.#type === FbxPropertyType.Compound) {
-            if (this.#value.has(name)) {
-                return false;
+            const existingProperty = this.#value.get(name);
+            if (existingProperty) {
+                return existingProperty;
             }
             const newProperty = new FBXProperty(this, type, name, value, flags);
             this.#value.set(name, newProperty);
@@ -297,25 +317,6 @@ class FBXObject {
         return this.#rootProperty.findProperty(propertyName);
     }
 }
-
-const FBX_PROPERTY_FLAG_NONE = 0;
-const FBX_PROPERTY_FLAG_STATIC = 1 << 0;
-const FBX_PROPERTY_FLAG_ANIMATABLE = 1 << 1;
-const FBX_PROPERTY_FLAG_ANIMATED = 1 << 2;
-const FBX_PROPERTY_FLAG_IMPORTED = 1 << 3;
-const FBX_PROPERTY_FLAG_USER_DEFINED = 1 << 4;
-const FBX_PROPERTY_FLAG_HIDDEN = 1 << 5;
-const FBX_PROPERTY_FLAG_NOT_SAVABLE = 1 << 6;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 = 1 << 7;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 = 1 << 8;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 = 1 << 9;
-const FBX_PROPERTY_FLAG_LOCKED_MEMBER_3 = 1 << 10;
-const FBX_PROPERTY_FLAG_LOCKED_ALL = FBX_PROPERTY_FLAG_LOCKED_MEMBER_0 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_1 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_2 | FBX_PROPERTY_FLAG_LOCKED_MEMBER_3;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_0 = 1 << 11;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_1 = 1 << 12;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_2 = 1 << 13;
-const FBX_PROPERTY_FLAG_MUTED_MEMBER_3 = 1 << 14;
-const FBX_PROPERTY_FLAG_MUTED_ALL = FBX_PROPERTY_FLAG_MUTED_MEMBER_0 | FBX_PROPERTY_FLAG_MUTED_MEMBER_1 | FBX_PROPERTY_FLAG_MUTED_MEMBER_2 | FBX_PROPERTY_FLAG_MUTED_MEMBER_3;
 
 class FBXAnimCurveNode extends FBXObject {
     #channels;
@@ -1763,6 +1764,23 @@ function parseArray(reader, arrayType) {
     return output;
 }
 
+const FBX_RECORD_NAME_CONNECTIONS = 'Connections';
+const FBX_RECORD_NAME_CREATOR = 'Creator';
+const FBX_RECORD_NAME_OBJECTS = 'Objects';
+const FBX_RECORD_NAME_REFERENCES = 'References';
+const FBX_RECORD_NAME_TAKES = 'Takes';
+
+function createConnectionRecord(id, parentId, target) {
+    let fbxRecord = new FBXRecord('C');
+    fbxRecord.addProperty(createStringProperty(target ? 'OP' : 'OO'));
+    fbxRecord.addProperty(createInt64Property(id));
+    fbxRecord.addProperty(createInt64Property(parentId));
+    if (target != undefined) {
+        fbxRecord.addProperty(createStringProperty(target));
+    }
+    return fbxRecord;
+}
+
 function createFBXRecord(name, options /*TODO: improve type*/) {
     let fbxRecord = new FBXRecord(name);
     if (options) {
@@ -1946,6 +1964,325 @@ function createPVector3D(name, value) {
             createDoubleProperty(value[0]),
             createDoubleProperty(value[1]),
             createDoubleProperty(value[2]),
+        ],
+    });
+}
+
+function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
+    let fbxFile = new FBXFile();
+    //let date = new Date();
+    fbxFile.addChild(createHeaderExtensionRecord(fbxFile, creator, appVendor, appName, appVersion));
+    fbxFile.addChild(createFBXRecordSingleString('Creator', creator));
+    fbxFile.addChild(createGlobalSettingsRecord());
+    fbxFile.addChild(createDocumentsRecord());
+    fbxFile.addChild(createFBXRecord('References'));
+    fbxFile.addChild(createDefinitionsRecord());
+    fbxFile.addChild(createFBXRecord('Objects'));
+    fbxFile.addChild(createFBXRecord('Connections'));
+    fbxFile.addChild(createTakesRecord());
+    return fbxFile;
+}
+function createHeaderExtensionRecord(fbxFile, creator, appVendor, appName, appVersion) {
+    let date = new Date();
+    let fbxHeaderExtension = createFBXRecord('FBXHeaderExtension', {
+        childs: [
+            createFBXRecordSingleInt32('FBXHeaderVersion', FBX_HEADER_VERSION),
+            createFBXRecordSingleInt32('FBXVersion', fbxFile.version),
+            createFBXRecordSingleInt32('EncryptionType', 0),
+            createFBXRecord('CreationTimeStamp', {
+                childs: [
+                    createFBXRecordSingleInt32('Version', 1000),
+                    createFBXRecordSingleInt32('Year', date.getFullYear()),
+                    createFBXRecordSingleInt32('Month', date.getMonth() + 1),
+                    createFBXRecordSingleInt32('Day', date.getDate()),
+                    createFBXRecordSingleInt32('Hour', date.getHours()),
+                    createFBXRecordSingleInt32('Minute', date.getMinutes()),
+                    createFBXRecordSingleInt32('Second', date.getSeconds()),
+                    createFBXRecordSingleInt32('Millisecond', date.getMilliseconds()),
+                ]
+            }),
+            createFBXRecordSingleString('Creator', creator),
+            createFBXRecord('SceneInfo', {
+                properties: [
+                    createStringProperty(fbxNameClass('GlobalInfo', 'SceneInfo')),
+                    createStringProperty('UserData'),
+                ],
+                childs: [
+                    createFBXRecordSingleString('Type', 'UserData'),
+                    createFBXRecordSingleInt32('Version', FBX_SCENEINFO_VERSION),
+                    createFBXRecord('MetaData', {
+                        childs: [
+                            createFBXRecordSingleInt32('Version', FBX_SCENEINFO_VERSION),
+                            createFBXRecordSingleString('Title', ''), //TODO
+                            createFBXRecordSingleString('Subject', ''), //TODO
+                            createFBXRecordSingleString('Author', ''), //TODO
+                            createFBXRecordSingleString('Keywords', ''), //TODO
+                            createFBXRecordSingleString('Revision', ''), //TODO
+                            createFBXRecordSingleString('Comment', ''), //TODO
+                        ]
+                    }),
+                    createFBXRecord('Properties70', {
+                        childs: [
+                            createFBXRecordMultipleStrings('P', ['DocumentUrl', 'KString', 'Url', '', './test.fbx']), //TODO
+                            createFBXRecordMultipleStrings('P', ['SrcDocumentUrl', 'KString', 'Url', '', './test.fbx']), //TODO
+                            createFBXRecordMultipleStrings('P', ['Original', 'Compound', '', '']),
+                            createFBXRecordMultipleStrings('P', ['Original|ApplicationVendor', 'KString', '', '', appVendor]),
+                            createFBXRecordMultipleStrings('P', ['Original|ApplicationName', 'KString', '', '', appName]),
+                            createFBXRecordMultipleStrings('P', ['Original|ApplicationVersion', 'KString', '', '', appVersion]),
+                            createFBXRecordMultipleStrings('P', ['Original|DateTime_GMT', 'DateTime', '', '', '01/01/1970 00:00:00.000']),
+                            createFBXRecordMultipleStrings('P', ['Original|FileName', 'KString', '', '', './test.fbx']), //TODO
+                            createFBXRecordMultipleStrings('P', ['LastSaved', 'Compound', '', '']),
+                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationVendor', 'KString', '', '', appVersion]),
+                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationName', 'KString', '', '', appName]),
+                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationVersion', 'KString', '', '', appVersion]),
+                            createFBXRecordMultipleStrings('P', ['LastSaved|DateTime_GMT', 'DateTime', '', '', '01/01/1970 00:00:00.000']),
+                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationActiveProject', 'KString', '', '', './test.fbx']), //TODO
+                        ]
+                    }),
+                ]
+            }),
+        ]
+    });
+    return fbxHeaderExtension;
+}
+function createGlobalSettingsRecord() {
+    let globalSettings = createFBXRecord('GlobalSettings', {
+        childs: [
+            createFBXRecordSingleInt32('Version', 1000),
+            createFBXRecord('Properties70', {
+                childs: [
+                    createPInteger('UpAxis', 1), //TODO
+                    createPInteger('UpAxisSign', 1), //TODO
+                    createPInteger('FrontAxis', 2), //TODO
+                    createPInteger('FrontAxisSign', 1), //TODO
+                    createPInteger('CoordAxis', 0), //TODO
+                    createPInteger('CoordAxisSign', 1), //TODO
+                    createPInteger('OriginalUpAxis', 1), //TODO
+                    createPInteger('OriginalUpAxisSign', 1), //TODO
+                    createPDouble('UnitScaleFactor', 1), //TODO
+                    createPDouble('OriginalUnitScaleFactor', 1), //TODO
+                    createPColorRGB('AmbientColor', [0, 0, 0]), //TODO
+                    createPString('DefaultCamera', 'Producer Perspective'), //TODO
+                    createPEnum('TimeMode', 17), //TODO
+                    createPTime('TimeSpanStart', 0n), //TODO
+                    createPTime('TimeSpanStop', FBX_KTIME), //TODO
+                    createPDouble('CustomFrameRate', -1), //TODO
+                    createPEnum('TimeProtocol', 2), //TODO
+                    createPEnum('SnapOnFrameMode', 0), //TODO
+                    createFBXRecordMultipleStrings('P', ['TimeMarker', 'Compound', '', '']),
+                    createPInteger('CurrentTimeMarker', -1), //TODO
+                ]
+            }),
+        ]
+    });
+    return globalSettings;
+}
+function createDocumentsRecord() {
+    let documents = createFBXRecord('Documents', {
+        childs: [
+            createFBXRecordSingleInt32('Count', 1),
+            createFBXRecord('Document', {
+                childs: [
+                    createFBXRecord('Properties70', {
+                        childs: [
+                            createPObject('SourceObject'),
+                            createPString('ActiveAnimStackName', ''), //TODO
+                        ]
+                    }),
+                    createFBXRecordSingleInt64('RootNode', 0n),
+                ],
+                properties: [
+                    createInt64Property(9876n), //TODO: what is this ?
+                    createStringProperty('Scene'),
+                    createStringProperty('Scene'),
+                ]
+            }),
+        ],
+    });
+    return documents;
+}
+function createDefinitionsRecord() {
+    let definitions = createFBXRecord('Definitions', {
+        childs: [
+            createFBXRecordSingleInt32('Version', FBX_TEMPLATES_VERSION),
+            createFBXRecordSingleInt32('Count', 4), //TODO: Sum of every template below
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('GlobalSettings'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        properties: [
+                            createStringProperty('FbxMesh'),
+                        ],
+                    }),
+                ],
+                properties: [
+                    createStringProperty('Geometry'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        childs: [],
+                        properties: [
+                            createStringProperty('FbxNode'),
+                        ],
+                    }),
+                ],
+                properties: [
+                    createStringProperty('Model'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        childs: [],
+                        properties: [
+                            createStringProperty('FbxSurfacePhong'),
+                        ],
+                    }),
+                ],
+                properties: [
+                    createStringProperty('Material'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        childs: [],
+                        properties: [
+                            createStringProperty('FbxFileTexture'),
+                        ],
+                    }),
+                ],
+                properties: [
+                    createStringProperty('Texture'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        childs: [],
+                        properties: [
+                            createStringProperty('FbxVideo'),
+                        ],
+                    }),
+                ],
+                properties: [
+                    createStringProperty('Video'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('Deformer'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                    createFBXRecord('PropertyTemplate', {
+                        childs: [
+                            createFBXRecord('Properties70', {
+                                childs: [
+                                    createPColorRGB('Color', [0.8, 0.8, 0.8]),
+                                    createPDouble('Size', 100),
+                                    createPDouble('LimbLength', 1), //TODO: P: "LimbLength", "double", "Number", "H",1
+                                ]
+                            }),
+                        ],
+                        properties: [
+                            createStringProperty('FbxSkeleton'),
+                        ]
+                    }),
+                ],
+                properties: [
+                    createStringProperty('NodeAttribute'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('Pose'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('AnimationStack'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('AnimationLayer'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('AnimationCurveNode'),
+                ],
+            }),
+            createFBXRecord('ObjectType', {
+                childs: [
+                    createFBXRecordSingleInt32('Count', 1),
+                ],
+                properties: [
+                    createStringProperty('AnimationCurve'),
+                ],
+            }),
+        ],
+    });
+    return definitions;
+}
+function createTakesRecord() {
+    let takes = createFBXRecord(FBX_RECORD_NAME_TAKES, {
+        childs: [
+            createFBXRecordSingleString('Current', ''),
+        ],
+    });
+    return takes;
+}
+
+function createVideoRecord(fbxVideo) {
+    return createFBXRecord('Video', {
+        childs: [
+            createFBXRecordSingleString('Type', fbxVideo.type),
+            createFBXRecordSingleString('RelativeFilename', `mat_${fbxVideo.id}.png`),
+            /*createFBXRecordSingleString('Filename', `C:\\Users\\Guillaume\\Desktop\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`),*/
+            createFBXRecordSingleBytes('Content', fbxVideo.content),
+            createFBXRecord('Properties70', {
+                childs: [
+                    createFBXRecordMultipleStrings('P', ['Path', 'KString', 'XRefUrl', '', `C:\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`]),
+                ],
+            }),
+        ],
+        properties: [
+            createInt64Property(fbxVideo.id),
+            createStringProperty(fbxVideo.name + '\x00\x01' + 'Video'),
+            createStringProperty('Clip'),
         ],
     });
 }
@@ -2573,342 +2910,6 @@ function fbxTextureToRecord(fbxTexture) {
             createInt64Property(fbxTexture.id),
             createStringProperty(fbxTexture.name + '\x00\x01' + 'Texture'),
             createStringProperty(''),
-        ],
-    });
-}
-
-const FBX_RECORD_NAME_CONNECTIONS = 'Connections';
-const FBX_RECORD_NAME_CREATOR = 'Creator';
-const FBX_RECORD_NAME_OBJECTS = 'Objects';
-const FBX_RECORD_NAME_REFERENCES = 'References';
-const FBX_RECORD_NAME_TAKES = 'Takes';
-
-function createConnectionRecord(id, parentId, target) {
-    let fbxRecord = new FBXRecord('C');
-    fbxRecord.addProperty(createStringProperty(target ? 'OP' : 'OO'));
-    fbxRecord.addProperty(createInt64Property(id));
-    fbxRecord.addProperty(createInt64Property(parentId));
-    if (target != undefined) {
-        fbxRecord.addProperty(createStringProperty(target));
-    }
-    return fbxRecord;
-}
-
-function createEmptyFile(creator = 'harmony-fbx', appVendor = 'harmony-fbx', appName = 'harmony-fbx', appVersion = '1') {
-    let fbxFile = new FBXFile();
-    //let date = new Date();
-    fbxFile.addChild(createHeaderExtensionRecord(fbxFile, creator, appVendor, appName, appVersion));
-    fbxFile.addChild(createFBXRecordSingleString('Creator', creator));
-    fbxFile.addChild(createGlobalSettingsRecord());
-    fbxFile.addChild(createDocumentsRecord());
-    fbxFile.addChild(createFBXRecord('References'));
-    fbxFile.addChild(createDefinitionsRecord());
-    fbxFile.addChild(createFBXRecord('Objects'));
-    fbxFile.addChild(createFBXRecord('Connections'));
-    fbxFile.addChild(createTakesRecord());
-    return fbxFile;
-}
-function createHeaderExtensionRecord(fbxFile, creator, appVendor, appName, appVersion) {
-    let date = new Date();
-    let fbxHeaderExtension = createFBXRecord('FBXHeaderExtension', {
-        childs: [
-            createFBXRecordSingleInt32('FBXHeaderVersion', FBX_HEADER_VERSION),
-            createFBXRecordSingleInt32('FBXVersion', fbxFile.version),
-            createFBXRecordSingleInt32('EncryptionType', 0),
-            createFBXRecord('CreationTimeStamp', {
-                childs: [
-                    createFBXRecordSingleInt32('Version', 1000),
-                    createFBXRecordSingleInt32('Year', date.getFullYear()),
-                    createFBXRecordSingleInt32('Month', date.getMonth() + 1),
-                    createFBXRecordSingleInt32('Day', date.getDate()),
-                    createFBXRecordSingleInt32('Hour', date.getHours()),
-                    createFBXRecordSingleInt32('Minute', date.getMinutes()),
-                    createFBXRecordSingleInt32('Second', date.getSeconds()),
-                    createFBXRecordSingleInt32('Millisecond', date.getMilliseconds()),
-                ]
-            }),
-            createFBXRecordSingleString('Creator', creator),
-            createFBXRecord('SceneInfo', {
-                properties: [
-                    createStringProperty(fbxNameClass('GlobalInfo', 'SceneInfo')),
-                    createStringProperty('UserData'),
-                ],
-                childs: [
-                    createFBXRecordSingleString('Type', 'UserData'),
-                    createFBXRecordSingleInt32('Version', FBX_SCENEINFO_VERSION),
-                    createFBXRecord('MetaData', {
-                        childs: [
-                            createFBXRecordSingleInt32('Version', FBX_SCENEINFO_VERSION),
-                            createFBXRecordSingleString('Title', ''), //TODO
-                            createFBXRecordSingleString('Subject', ''), //TODO
-                            createFBXRecordSingleString('Author', ''), //TODO
-                            createFBXRecordSingleString('Keywords', ''), //TODO
-                            createFBXRecordSingleString('Revision', ''), //TODO
-                            createFBXRecordSingleString('Comment', ''), //TODO
-                        ]
-                    }),
-                    createFBXRecord('Properties70', {
-                        childs: [
-                            createFBXRecordMultipleStrings('P', ['DocumentUrl', 'KString', 'Url', '', './test.fbx']), //TODO
-                            createFBXRecordMultipleStrings('P', ['SrcDocumentUrl', 'KString', 'Url', '', './test.fbx']), //TODO
-                            createFBXRecordMultipleStrings('P', ['Original', 'Compound', '', '']),
-                            createFBXRecordMultipleStrings('P', ['Original|ApplicationVendor', 'KString', '', '', appVendor]),
-                            createFBXRecordMultipleStrings('P', ['Original|ApplicationName', 'KString', '', '', appName]),
-                            createFBXRecordMultipleStrings('P', ['Original|ApplicationVersion', 'KString', '', '', appVersion]),
-                            createFBXRecordMultipleStrings('P', ['Original|DateTime_GMT', 'DateTime', '', '', '01/01/1970 00:00:00.000']),
-                            createFBXRecordMultipleStrings('P', ['Original|FileName', 'KString', '', '', './test.fbx']), //TODO
-                            createFBXRecordMultipleStrings('P', ['LastSaved', 'Compound', '', '']),
-                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationVendor', 'KString', '', '', appVersion]),
-                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationName', 'KString', '', '', appName]),
-                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationVersion', 'KString', '', '', appVersion]),
-                            createFBXRecordMultipleStrings('P', ['LastSaved|DateTime_GMT', 'DateTime', '', '', '01/01/1970 00:00:00.000']),
-                            createFBXRecordMultipleStrings('P', ['LastSaved|ApplicationActiveProject', 'KString', '', '', './test.fbx']), //TODO
-                        ]
-                    }),
-                ]
-            }),
-        ]
-    });
-    return fbxHeaderExtension;
-}
-function createGlobalSettingsRecord() {
-    let globalSettings = createFBXRecord('GlobalSettings', {
-        childs: [
-            createFBXRecordSingleInt32('Version', 1000),
-            createFBXRecord('Properties70', {
-                childs: [
-                    createPInteger('UpAxis', 1), //TODO
-                    createPInteger('UpAxisSign', 1), //TODO
-                    createPInteger('FrontAxis', 2), //TODO
-                    createPInteger('FrontAxisSign', 1), //TODO
-                    createPInteger('CoordAxis', 0), //TODO
-                    createPInteger('CoordAxisSign', 1), //TODO
-                    createPInteger('OriginalUpAxis', 1), //TODO
-                    createPInteger('OriginalUpAxisSign', 1), //TODO
-                    createPDouble('UnitScaleFactor', 1), //TODO
-                    createPDouble('OriginalUnitScaleFactor', 1), //TODO
-                    createPColorRGB('AmbientColor', [0, 0, 0]), //TODO
-                    createPString('DefaultCamera', 'Producer Perspective'), //TODO
-                    createPEnum('TimeMode', 17), //TODO
-                    createPTime('TimeSpanStart', 0n), //TODO
-                    createPTime('TimeSpanStop', FBX_KTIME), //TODO
-                    createPDouble('CustomFrameRate', -1), //TODO
-                    createPEnum('TimeProtocol', 2), //TODO
-                    createPEnum('SnapOnFrameMode', 0), //TODO
-                    createFBXRecordMultipleStrings('P', ['TimeMarker', 'Compound', '', '']),
-                    createPInteger('CurrentTimeMarker', -1), //TODO
-                ]
-            }),
-        ]
-    });
-    return globalSettings;
-}
-function createDocumentsRecord() {
-    let documents = createFBXRecord('Documents', {
-        childs: [
-            createFBXRecordSingleInt32('Count', 1),
-            createFBXRecord('Document', {
-                childs: [
-                    createFBXRecord('Properties70', {
-                        childs: [
-                            createPObject('SourceObject'),
-                            createPString('ActiveAnimStackName', ''), //TODO
-                        ]
-                    }),
-                    createFBXRecordSingleInt64('RootNode', 0n),
-                ],
-                properties: [
-                    createInt64Property(9876n), //TODO: what is this ?
-                    createStringProperty('Scene'),
-                    createStringProperty('Scene'),
-                ]
-            }),
-        ],
-    });
-    return documents;
-}
-function createDefinitionsRecord() {
-    let definitions = createFBXRecord('Definitions', {
-        childs: [
-            createFBXRecordSingleInt32('Version', FBX_TEMPLATES_VERSION),
-            createFBXRecordSingleInt32('Count', 4), //TODO: Sum of every template below
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('GlobalSettings'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        properties: [
-                            createStringProperty('FbxMesh'),
-                        ],
-                    }),
-                ],
-                properties: [
-                    createStringProperty('Geometry'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        childs: [],
-                        properties: [
-                            createStringProperty('FbxNode'),
-                        ],
-                    }),
-                ],
-                properties: [
-                    createStringProperty('Model'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        childs: [],
-                        properties: [
-                            createStringProperty('FbxSurfacePhong'),
-                        ],
-                    }),
-                ],
-                properties: [
-                    createStringProperty('Material'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        childs: [],
-                        properties: [
-                            createStringProperty('FbxFileTexture'),
-                        ],
-                    }),
-                ],
-                properties: [
-                    createStringProperty('Texture'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        childs: [],
-                        properties: [
-                            createStringProperty('FbxVideo'),
-                        ],
-                    }),
-                ],
-                properties: [
-                    createStringProperty('Video'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('Deformer'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                    createFBXRecord('PropertyTemplate', {
-                        childs: [
-                            createFBXRecord('Properties70', {
-                                childs: [
-                                    createPColorRGB('Color', [0.8, 0.8, 0.8]),
-                                    createPDouble('Size', 100),
-                                    createPDouble('LimbLength', 1), //TODO: P: "LimbLength", "double", "Number", "H",1
-                                ]
-                            }),
-                        ],
-                        properties: [
-                            createStringProperty('FbxSkeleton'),
-                        ]
-                    }),
-                ],
-                properties: [
-                    createStringProperty('NodeAttribute'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('Pose'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('AnimationStack'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('AnimationLayer'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('AnimationCurveNode'),
-                ],
-            }),
-            createFBXRecord('ObjectType', {
-                childs: [
-                    createFBXRecordSingleInt32('Count', 1),
-                ],
-                properties: [
-                    createStringProperty('AnimationCurve'),
-                ],
-            }),
-        ],
-    });
-    return definitions;
-}
-function createTakesRecord() {
-    let takes = createFBXRecord(FBX_RECORD_NAME_TAKES, {
-        childs: [
-            createFBXRecordSingleString('Current', ''),
-        ],
-    });
-    return takes;
-}
-
-function createVideoRecord(fbxVideo) {
-    return createFBXRecord('Video', {
-        childs: [
-            createFBXRecordSingleString('Type', fbxVideo.type),
-            createFBXRecordSingleString('RelativeFilename', `mat_${fbxVideo.id}.png`),
-            /*createFBXRecordSingleString('Filename', `C:\\Users\\Guillaume\\Desktop\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`),*/
-            createFBXRecordSingleBytes('Content', fbxVideo.content),
-            createFBXRecord('Properties70', {
-                childs: [
-                    createFBXRecordMultipleStrings('P', ['Path', 'KString', 'XRefUrl', '', `C:\\fbx\\untitled.fbm\\mat_${fbxVideo.id}.png`]),
-                ],
-            }),
-        ],
-        properties: [
-            createInt64Property(fbxVideo.id),
-            createStringProperty(fbxVideo.name + '\x00\x01' + 'Video'),
-            createStringProperty('Clip'),
         ],
     });
 }

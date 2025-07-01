@@ -1,7 +1,8 @@
-import { FBXManager } from './fbxmanager';
-import { FBXObject } from './fbxobject';
 import { FBX_PROPERTY_FLAG_STATIC } from '../enums/propertyflags';
 import { FBX_PROPERTY_TYPE_COMPOUND, FbxPropertyType } from '../enums/propertytype';
+import { FBXManager } from './fbxmanager';
+import { FBXObject } from './fbxobject';
+import { FBXProperty } from './fbxproperty';
 
 export class FBXAnimCurveNode extends FBXObject {
 	#channels;
@@ -20,7 +21,7 @@ export class FBXAnimCurveNode extends FBXObject {
 		throw 'Code me';
 	}
 
-	addChannel(type: FbxPropertyType, name: string, value: any, flags: number) {
+	addChannel(type: FbxPropertyType, name: string, value: any, flags: number): FBXProperty {
 		return this.#channels.createProperty(type, name, value, flags);
 	}
 }
