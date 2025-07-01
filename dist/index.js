@@ -1021,6 +1021,7 @@ FBXManager.registerClass('FBXSurfaceMaterial', FBXSurfaceMaterial);
 
 class FBXSurfaceLambert extends FBXSurfaceMaterial {
     #diffuse;
+    #normalMap;
     isFBXSurfaceLambert = true;
     constructor(manager, name) {
         super(manager, name);
@@ -1033,6 +1034,15 @@ class FBXSurfaceLambert extends FBXSurfaceMaterial {
     }
     get diffuse() {
         return this.#diffuse;
+    }
+    set normalMap(normalMap) {
+        if (normalMap) {
+            console.assert(normalMap.isFBXProperty && normalMap.type == FBX_PROPERTY_TYPE_COLOR_3, "normalMap is not an FBXProperty");
+        }
+        this.#normalMap = normalMap;
+    }
+    get normalMap() {
+        return this.#normalMap;
     }
 }
 FBXManager.registerClass('FBXSurfaceLambert', FBXSurfaceLambert);

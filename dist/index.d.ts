@@ -805,6 +805,8 @@ export declare class FBXSurfaceLambert extends FBXSurfaceMaterial {
     constructor(manager: FBXManager, name: string);
     set diffuse(diffuse: FBXProperty);
     get diffuse(): FBXProperty;
+    set normalMap(normalMap: FBXProperty | undefined);
+    get normalMap(): FBXProperty | undefined;
 }
 
 export declare class FBXSurfaceMaterial extends FBXObject {
