@@ -2,12 +2,12 @@ import { FBXGeometry } from './fbxgeometry';
 import { FBXManager } from './fbxmanager';
 
 export class FBXMesh extends FBXGeometry {
-	#vertices = [];
-	#normals = [];
-	#polygons = [];
-	#edges = [];
-	#uv = [];
-	#uvIndex = [];
+	#vertices: number[] = [];
+	#normals: number[] = [];
+	#polygons: number[] = [];
+	#edges: number[] = [];
+	#uv: number[] = [];
+	#uvIndex: number[] = [];
 	isFBXMesh = true;
 
 	set vertices(vertices) {
