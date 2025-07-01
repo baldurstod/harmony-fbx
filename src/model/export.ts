@@ -1,3 +1,4 @@
+export * from './fbxanimcurvenode';
 export * from './fbxanimlayer';
 export * from './fbxanimstack';
 export * from './fbxcamera';
@@ -9,6 +10,8 @@ export * from './fbxpose';
 export * from './fbxscene';
 export * from './fbxskeleton';
 export * from './fbxskin';
+export * from './fbxsurfacelambert';
+export * from './fbxsurfacematerial';
 export * from './fbxsurfacephong';
 export * from './fbxtexture';
 export * from './fbxvideo';

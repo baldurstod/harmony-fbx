@@ -1,6 +1,8 @@
+import { FBXProperty as FBXProperty_2 } from './fbxproperty';
+import { FBXRecord as FBXRecord_2 } from '../model/fbxrecord';
 import { mat4 } from 'gl-matrix';
 
-export declare function createDefinitionsRecord(): FBXRecord;
+export declare function createDefinitionsRecord(): FBXRecord_2;
 
 export declare function createEmptyFile(creator?: string, appVendor?: string, appName?: string, appVersion?: string): FBXFile;
 
@@ -42,9 +44,9 @@ export declare function createFBXRecordSingleInt8(name: string, value: number): 
 
 export declare function createFBXRecordSingleString(name: string, value: string): FBXRecord;
 
-export declare function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string): FBXRecord;
+export declare function createHeaderExtensionRecord(fbxFile: FBXFile, creator: string, appVendor: string, appName: string, appVersion: string): FBXRecord_2;
 
-export declare function createTakesRecord(): FBXRecord;
+export declare function createTakesRecord(): FBXRecord_2;
 
 export declare const FBX_BINARY_MAGIC = "Kaydara FBX Binary  \0";
 
@@ -378,6 +380,15 @@ export declare class FBXAnimCurveKey {
     get time(): FBXTime;
 }
 
+export declare class FBXAnimCurveNode extends FBXObject {
+    #private;
+    isFBXAnimCurveNode: boolean;
+    constructor(manager: FBXManager, name: string);
+    isAnimated(recurse?: boolean): void;
+    createTypedCurveNode(): void;
+    addChannel(type: FbxPropertyType, name: string, value: any, flags: number): false | FBXProperty_2;
+}
+
 export declare class FBXAnimLayer extends FBXCollection {
     isFBXAnimLayer: boolean;
 }
@@ -416,22 +427,22 @@ export declare class FBXCamera extends FBXNodeAttribute {
     #private;
     isFBXCamera: boolean;
     constructor(manager: FBXManager, name: string);
-    set position(position: FBXProperty);
-    get position(): FBXProperty;
-    set upVector(upVector: FBXProperty);
-    get upVector(): FBXProperty;
-    set interestPosition(interestPosition: FBXProperty);
-    get interestPosition(): FBXProperty;
-    set roll(roll: FBXProperty);
-    get roll(): FBXProperty;
-    set nearPlane(nearPlane: FBXProperty);
-    get nearPlane(): FBXProperty;
-    set farPlane(farPlane: FBXProperty);
-    get farPlane(): FBXProperty;
-    set projectionType(projectionType: FBXProperty);
-    get projectionType(): FBXProperty;
-    set orthoZoom(orthoZoom: FBXProperty);
-    get orthoZoom(): FBXProperty;
+    set position(position: FBXProperty_2);
+    get position(): FBXProperty_2;
+    set upVector(upVector: FBXProperty_2);
+    get upVector(): FBXProperty_2;
+    set interestPosition(interestPosition: FBXProperty_2);
+    get interestPosition(): FBXProperty_2;
+    set roll(roll: FBXProperty_2);
+    get roll(): FBXProperty_2;
+    set nearPlane(nearPlane: FBXProperty_2);
+    get nearPlane(): FBXProperty_2;
+    set farPlane(farPlane: FBXProperty_2);
+    get farPlane(): FBXProperty_2;
+    set projectionType(projectionType: FBXProperty_2);
+    get projectionType(): FBXProperty_2;
+    set orthoZoom(orthoZoom: FBXProperty_2);
+    get orthoZoom(): FBXProperty_2;
     getAttributeType(): number;
 }
 
@@ -581,18 +592,18 @@ export declare class FBXManager {
 export declare class FBXMesh extends FBXGeometry {
     #private;
     isFBXMesh: boolean;
-    set vertices(vertices: never[]);
-    get vertices(): never[];
-    set normals(normals: never[]);
-    get normals(): never[];
-    set polygons(polygons: never[]);
-    get polygons(): never[];
-    set edges(edges: never[]);
-    get edges(): never[];
-    set uv(uv: never[]);
-    get uv(): never[];
-    set uvIndex(uvIndex: never[]);
-    get uvIndex(): never[];
+    set vertices(vertices: number[]);
+    get vertices(): number[];
+    set normals(normals: number[]);
+    get normals(): number[];
+    set polygons(polygons: number[]);
+    get polygons(): number[];
+    set edges(edges: number[]);
+    get edges(): number[];
+    set uv(uv: number[]);
+    get uv(): number[];
+    set uvIndex(uvIndex: number[]);
+    get uvIndex(): number[];
 }
 
 export declare function fbxNameClass(name: string, className: string): string;
@@ -612,12 +623,12 @@ export declare class FBXNode extends FBXObject {
     get inheritType(): number;
     set show(show: any);
     get show(): any;
-    set localTranslation(localTranslation: FBXProperty);
-    get localTranslation(): FBXProperty;
-    set localRotation(localRotation: FBXProperty);
-    get localRotation(): FBXProperty;
-    set localScaling(localScaling: FBXProperty);
-    get localScaling(): FBXProperty;
+    set localTranslation(localTranslation: FBXProperty_2);
+    get localTranslation(): FBXProperty_2;
+    set localRotation(localRotation: FBXProperty_2);
+    get localRotation(): FBXProperty_2;
+    set localScaling(localScaling: FBXProperty_2);
+    get localScaling(): FBXProperty_2;
     addMaterial(surfaceMaterial: FBXSurfaceMaterial): void;
     get materials(): FBXSurfaceMaterial[];
     toJSON(): {};
@@ -790,15 +801,15 @@ declare class FBXSubDeformer extends FBXObject {
     get subDeformerType(): number;
 }
 
-declare class FBXSurfaceLambert extends FBXSurfaceMaterial {
+export declare class FBXSurfaceLambert extends FBXSurfaceMaterial {
     #private;
     isFBXSurfaceLambert: boolean;
     constructor(manager: FBXManager, name: string);
-    set diffuse(diffuse: FBXProperty);
-    get diffuse(): FBXProperty;
+    set diffuse(diffuse: FBXProperty_2);
+    get diffuse(): FBXProperty_2;
 }
 
-declare class FBXSurfaceMaterial extends FBXObject {
+export declare class FBXSurfaceMaterial extends FBXObject {
     #private;
     isFBXSurfaceMaterial: boolean;
     constructor(manager: FBXManager, name: string);
