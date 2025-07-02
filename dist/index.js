@@ -2794,7 +2794,7 @@ function fbxSurfaceMaterialToRecord(fbxSurfaceMaterial) {
                             createStringProperty('double'),
                             createStringProperty('Number'),
                             createStringProperty(''),
-                            createDoubleProperty(0),
+                            createDoubleProperty(1),
                         ],
                     }),
                     createFBXRecord('P', {
