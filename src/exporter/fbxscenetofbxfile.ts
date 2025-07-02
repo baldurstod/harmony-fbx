@@ -63,8 +63,8 @@ export function fbxSceneToFBXFile(scene: FBXScene, creator = 'harmony-fbx', appV
 }
 
 type ExportContext = {
-	nodesReferences: Set<any>,
-	nodesConnections: Set<any>,
+	nodesReferences: Set<FBXObject>,
+	nodesConnections: Set<Connection>,
 	alreadyExported: Set<FBXObject>,
 }
 
@@ -76,7 +76,7 @@ function exportObjects(fbxFile: FBXFile, scene: FBXScene): void {
 	*/
 
 	const context: ExportContext = {
-		nodesReferences: new Set(),
+		nodesReferences: new Set<FBXObject>(),
 		nodesConnections: new Set<Connection>(),
 		alreadyExported: new Set<FBXObject>(),
 	}
