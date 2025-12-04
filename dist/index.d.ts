@@ -502,7 +502,7 @@ declare class FBXDocumentInfo extends FBXObject {
 }
 
 export declare class FBXExporter {
-    exportBinary(fbxFile: FBXFile): ArrayBufferLike;
+    exportBinary(fbxFile: FBXFile): ArrayBuffer;
 }
 
 export declare class FBXFile {

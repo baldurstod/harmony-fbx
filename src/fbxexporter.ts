@@ -1,9 +1,9 @@
 import { BinaryReader } from 'harmony-binary-reader';
-import { FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_LEN, FBX_BINARY_MAGIC } from './constants';
-import { createStringProperty, createRawProperty } from './utils/createfbxproperty';
-import { FBXRecord } from './model/fbxrecord';
+import { FBX_BINARY_MAGIC, FBX_DATA_LEN, FBX_DATA_TYPE_ARRAY_DOUBLE, FBX_DATA_TYPE_ARRAY_FLOAT, FBX_DATA_TYPE_ARRAY_INT_32, FBX_DATA_TYPE_ARRAY_INT_64, FBX_DATA_TYPE_ARRAY_INT_8, FBX_DATA_TYPE_DOUBLE, FBX_DATA_TYPE_FLOAT, FBX_DATA_TYPE_INT_16, FBX_DATA_TYPE_INT_32, FBX_DATA_TYPE_INT_64, FBX_DATA_TYPE_INT_8, FBX_DATA_TYPE_RAW, FBX_DATA_TYPE_STRING } from './constants';
 import { FBXFile } from './model/fbxfile';
+import { FBXRecord } from './model/fbxrecord';
 import { FBXRecordProperty } from './model/fbxrecordproperty';
+import { createRawProperty, createStringProperty } from './utils/createfbxproperty';
 
 
 const _TIME_ID = '1970-01-01 10:00:00:000';
@@ -13,7 +13,7 @@ const _FOOT_ID = new Uint8Array([0xfa, 0xbc, 0xab, 0x09, 0xd0, 0xc8, 0xd4, 0x66,
 const FBX_FOOTER2 = '\xf8\x5a\x8c\x6a\xde\xf5\xd9\x7e\xec\xe9\x0c\xe3\x75\x8f\x29\x0b';
 
 export class FBXExporter {
-	exportBinary(fbxFile: FBXFile) {
+	exportBinary(fbxFile: FBXFile): ArrayBuffer {
 		checkFile(fbxFile);
 		let version = fbxFile.version;
 		let size = getFileSize(fbxFile, version);
@@ -37,7 +37,7 @@ function checkFile(fbxFile: FBXFile) {
 	formatFileIdRecord(fbxFile);
 }
 
-function exportBinaryFile(writer: BinaryReader, fbxFile: FBXFile) {
+function exportBinaryFile(writer: BinaryReader, fbxFile: FBXFile): ArrayBuffer {
 	let version = fbxFile.version;
 	writer.seek(0);
 	writer.setString(FBX_BINARY_MAGIC);
@@ -58,7 +58,7 @@ function exportBinaryFile(writer: BinaryReader, fbxFile: FBXFile) {
 	writer.skip(120);
 	writer.setString(FBX_FOOTER2);
 
-	return writer.buffer;
+	return writer.buffer as ArrayBuffer;
 }
 
 function formatFileIdRecord(fbxFile: FBXFile) {
