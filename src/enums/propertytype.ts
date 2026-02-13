@@ -9,7 +9,7 @@ export enum FbxPropertyType {
 	Bool = 5000,
 }
 
-
+// TODO: replace these constants by enum FbxPropertyType
 export const FBX_PROPERTY_TYPE_DOUBLE = 50;
 export const FBX_PROPERTY_TYPE_DOUBLE_3 = 100;
 export const FBX_PROPERTY_TYPE_STRING = 200;

@@ -777,6 +777,7 @@ export declare function fbxSceneToFBXFile(scene: FBXScene, creator?: string, app
 export declare class FBXSkeleton extends FBXNodeAttribute {
     skeletonType: SkeletonType;
     isFBXSkeleton: boolean;
+    readonly size: FBXProperty;
     constructor(manager: FBXManager, name: string, skeletonType: SkeletonType);
     getAttributeType(): number;
 }
@@ -911,6 +912,15 @@ export declare enum ReferenceMode {
     Direct = 0,
     Index = 1,
     IndexToDirect = 2
+}
+
+export declare enum RotationOrder {
+    XYZ = 0,
+    XZY = 1,
+    YZX = 2,
+    YXZ = 3,
+    ZXY = 4,
+    ZYX = 5
 }
 
 export declare enum SkeletonType {
