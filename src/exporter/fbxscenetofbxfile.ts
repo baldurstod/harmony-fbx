@@ -82,20 +82,19 @@ function exportObjects(fbxFile: FBXFile, scene: FBXScene): void {
 	}
 
 	for (let child of scene.rootNode.childs) {
-		exportObject(fbxFile, child, context/*nodesReferences, nodesConnections, alreadyExported*/);
+		exportObject(fbxFile, child, context);
 	}
 	for (let object of scene.objects) {
-		exportObject(fbxFile, object, context/*nodesReferences, nodesConnections, alreadyExported*/);
+		exportObject(fbxFile, object, context);
 	}
 	for (; ;) {
-		//let nodesReferences2 = new Set();
 		const context2: ExportContext = {
 			nodesReferences: new Set(),
 			nodesConnections: context.nodesConnections,
 			alreadyExported: context.alreadyExported,
 		}
 		for (let child of context.nodesReferences) {
-			exportObject(fbxFile, child, context2/*nodesReferences2, nodesConnections, alreadyExported*/);
+			exportObject(fbxFile, child, context2);
 		}
 		if (context2.nodesReferences.size == 0) {
 			break;
@@ -106,22 +105,21 @@ function exportObjects(fbxFile: FBXFile, scene: FBXScene): void {
 	createConnections(fbxFile, context.nodesConnections);
 }
 
-function exportObject(fbxFile: FBXFile, object: FBXObject, context: ExportContext/*nodesReferences, nodesConnections, alreadyExported*/): void {
+function exportObject(fbxFile: FBXFile, object: FBXObject, context: ExportContext): void {
 	if (context.alreadyExported.has(object)) {
 		return;
 	}
 	switch (true) {
 		case (object as FBXNode).isFBXNode:
-			exportNode(fbxFile, (object as FBXNode), context/*nodesReferences, nodesConnections, alreadyExported*/);
+			exportNode(fbxFile, (object as FBXNode), context);
 			break;
 		case object.isFBXObject:
-			exportObject2(fbxFile, object, context/*nodesReferences, nodesConnections*/);
+			exportObject2(fbxFile, object, context);
 			break;
 		default:
 			console.log(object);
 			throw 'Trying to export an unknown object';
 	}
-	context.alreadyExported.add(object)
 }
 
 function exportObject2(fbxFile: FBXFile, object: FBXObject, context: ExportContext): void {
@@ -162,13 +160,15 @@ function exportObject2(fbxFile: FBXFile, object: FBXObject, context: ExportConte
 			console.log(object);
 			throw 'Export of this object is missing';
 	}
+
+	context.alreadyExported.add(object);
 }
 
 function exportObjectPropertiesConnections(fbxFile: FBXFile, fbxObject: FBXObject, context: ExportContext): void {
 	exportPropertiesConnections(fbxFile, fbxObject.rootProperty, context)
 }
 
-function exportPropertiesConnections(fbxFile: FBXFile, fbxProperty: FBXProperty, context: ExportContext/*nodesReferences, nodesConnections*/): void {
+function exportPropertiesConnections(fbxFile: FBXFile, fbxProperty: FBXProperty, context: ExportContext): void {
 	fbxProperty.srcObjects.forEach(object => {
 		const parentObject = fbxProperty.getParentObject();
 
@@ -186,17 +186,17 @@ function exportPropertiesConnections(fbxFile: FBXFile, fbxProperty: FBXProperty,
 	if (fbxProperty.isCompound()) {
 		for (const [key, value] of fbxProperty.value) {
 			//console.log(key, value);
-			exportPropertiesConnections(fbxFile, value, context/*nodesReferences, nodesConnections*/);
+			exportPropertiesConnections(fbxFile, value, context);
 		}
 	}
 }
 
-function exportNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext /*nodesReferences, nodesConnections, alreadyExported*/): void {
+function exportNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext): void {
 	if (context.alreadyExported.has(node)) {
 		return;
 	}
 
-	exportObjectPropertiesConnections(fbxFile, node, context/*nodesReferences, nodesConnections*/);
+	exportObjectPropertiesConnections(fbxFile, node, context);
 
 	if (node.nodeAttribute) {
 		let nodeAttribute = node.nodeAttribute;
@@ -219,8 +219,10 @@ function exportNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext /*no
 	}
 
 	for (let child of node.childs) {
-		exportNode(fbxFile, child, context/*nodesReferences, nodesConnections, alreadyExported*/);
+		exportNode(fbxFile, child, context);
 	}
+
+	context.alreadyExported.add(node);
 }
 
 function exportMeshNode(fbxFile: FBXFile, node: FBXNode, context: ExportContext): void {
@@ -273,7 +275,7 @@ function createConnection(src: FBXObject, dst: FBXObject, target?: string): Conn
 	return { source: src.id, destination: dst.id, target: target };
 }
 
-function exportSurfacePhongObject(fbxFile: FBXFile, fbxSurfacePhong: FBXSurfacePhong, context: ExportContext/*, nodesReferences, nodesConnections*/): void {
+function exportSurfacePhongObject(fbxFile: FBXFile, fbxSurfacePhong: FBXSurfacePhong, context: ExportContext): void {
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	let propertyNames = ['diffuse'];
@@ -290,7 +292,7 @@ function exportSurfacePhongObject(fbxFile: FBXFile, fbxSurfacePhong: FBXSurfaceP
 	objectsRecord.addChild(fbxSurfaceMaterialToRecord(fbxSurfacePhong));
 }
 
-function exportFBXTexture(fbxFile: FBXFile, fbxTexture: FBXTexture, context: ExportContext/*, nodesReferences, nodesConnections*/): void {
+function exportFBXTexture(fbxFile: FBXFile, fbxTexture: FBXTexture, context: ExportContext): void {
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	let textureMedia = fbxTexture.media;
@@ -307,7 +309,7 @@ function exportFBXVideo(fbxFile: FBXFile, fbxVideo: FBXVideo): void {
 	objectsRecord.addChild(createVideoRecord(fbxVideo));
 }
 
-function exportFBXSkin(fbxFile: FBXFile, fbxSkin: FBXSkin, context: ExportContext/*, nodesReferences, nodesConnections*/): void {
+function exportFBXSkin(fbxFile: FBXFile, fbxSkin: FBXSkin, context: ExportContext): void {
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 
 	fbxSkin.clusters.forEach(cluster => {
@@ -318,7 +320,7 @@ function exportFBXSkin(fbxFile: FBXFile, fbxSkin: FBXSkin, context: ExportContex
 	objectsRecord.addChild(fbxSkinToRecord(fbxSkin));
 }
 
-function exportFBXCluster(fbxFile: FBXFile, fbxCluster: FBXCluster, context: ExportContext/*, nodesReferences, nodesConnections*/): void {
+function exportFBXCluster(fbxFile: FBXFile, fbxCluster: FBXCluster, context: ExportContext): void {
 	if (fbxCluster.indexes.length == 0) {
 		return;
 	}
