@@ -321,9 +321,11 @@ function exportFBXSkin(fbxFile: FBXFile, fbxSkin: FBXSkin, context: ExportContex
 }
 
 function exportFBXCluster(fbxFile: FBXFile, fbxCluster: FBXCluster, context: ExportContext): void {
+	/*
 	if (fbxCluster.indexes.length == 0) {
 		return;
 	}
+	*/
 	let objectsRecord = fbxFile.getRecordByName(FBX_RECORD_NAME_OBJECTS) as FBXRecord;
 	if (fbxCluster.link) {
 		context.nodesReferences.add(fbxCluster.link);
